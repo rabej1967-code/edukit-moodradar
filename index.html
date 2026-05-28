@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mood Radar Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#F4F2ED;--surf:#FFF;--surf2:#F0EDE6;--surf3:#E6E2D9;
+  --ink:#1A1A0F;--ink2:#3D3D2E;--ink3:#7A7860;--ink4:#B5B39E;
+  --bdr:rgba(26,26,15,.09);--bdr2:rgba(26,26,15,.05);
+  --p:#1E3A5F;--p2:#2D5F9E;--p3:#E8F0FA;--p4:#A8C4E8;
+  --g:#0D5C3A;--g2:#1A9E6A;--g3:#E0F5EC;
+  --r:#8B2020;--r2:#D94040;--r3:#FAEAEA;
+  --a:#7A4A0A;--a2:#E8960E;--a3:#FEF0D6;
+  --sh:0 2px 20px rgba(26,26,15,.07);--sh2:0 8px 40px rgba(26,26,15,.14);--sh3:0 1px 4px rgba(26,26,15,.06);
+  --rad:16px;--radsm:10px;--radxs:7px;--sidebar:264px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+input,select,textarea,button{font-family:inherit}
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--p);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .7s,visibility .7s}
+#splash.out{opacity:0;visibility:hidden;pointer-events:none}
+.sp-ic{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.12);position:relative;overflow:hidden;margin-bottom:.5rem}
+.sp-ic::before{content:'';position:absolute;top:50%;left:50%;width:48%;height:2px;background:rgba(255,255,255,.9);transform-origin:left center;animation:sweep 2s linear infinite}
+.sp-ic::after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.15);width:70%;height:70%;top:15%;left:15%}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.sp-nm{font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:.3rem}
+.sp-nm em{color:rgba(255,255,255,.45);font-style:normal;font-weight:400}
+.sp-tg{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.75rem}
+.sp-bar{width:150px;height:2px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
+.sp-fill{height:100%;background:rgba(255,255,255,.65);animation:sfill 2s ease forwards}
+@keyframes sfill{from{width:0}to{width:100%}}
+/* AUTH */
+#authScreen{display:none;min-height:100vh}
+.auth-layout{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+@media(max-width:680px){.auth-layout{grid-template-columns:1fr}}
+.auth-brand{background:var(--p);display:flex;flex-direction:column;justify-content:center;padding:3rem;position:relative;overflow:hidden}
+@media(max-width:680px){.auth-brand{display:none}}
+.a-ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.07);transform:translate(-50%,-50%);top:50%;left:50%}
+.a-bic{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);position:relative;overflow:hidden;flex-shrink:0}
+.a-bic::before{content:'';position:absolute;top:50%;left:50%;width:48%;height:2px;background:rgba(255,255,255,.8);transform-origin:left center;animation:sweep 2.5s linear infinite}
+.a-bic::after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.2);width:70%;height:70%;top:15%;left:15%}
+.auth-panel{display:flex;flex-direction:column;justify-content:center;padding:2.5rem 2.25rem;background:var(--surf)}
+@media(max-width:680px){.auth-panel{padding:2rem 1.25rem;min-height:100vh}}
+.a-tabs{display:flex;background:var(--surf2);border-radius:var(--radsm);padding:3px;margin-bottom:1.75rem}
+.a-tab{flex:1;padding:.5rem;text-align:center;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;border-radius:8px;transition:.15s}
+.a-tab.on{background:var(--surf);color:var(--ink);box-shadow:var(--sh3)}
+.fld{margin-bottom:.9rem}
+.fld-lbl{font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:.3rem;display:block;text-transform:uppercase;letter-spacing:.04em}
+.fld-inp{width:100%;padding:11px 13px;border-radius:var(--radsm);border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink);font-size:13.5px;outline:none;transition:.15s}
+.fld-inp:focus{border-color:var(--p2);background:var(--surf);box-shadow:0 0 0 3px var(--p3)}
+.fld-inp::placeholder{color:var(--ink4)}
+.a-err{font-size:12px;color:var(--r2);background:var(--r3);padding:.45rem .75rem;border-radius:var(--radxs);margin-bottom:.75rem;display:none}
+.a-err.on{display:block}
+.a-btn{width:100%;padding:13px;border-radius:var(--radsm);border:none;background:var(--p);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:.18s}
+.a-btn:hover{background:var(--p2);transform:translateY(-1px)}
+/* APP */
+#appScreen{display:none;min-height:100vh}
+.app-wrap{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:100vh}
+@media(max-width:860px){.app-wrap{grid-template-columns:1fr}}
+.sidebar{background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+@media(max-width:860px){.sidebar{display:none}}
+.sb-top{padding:1.1rem 1rem .9rem;border-bottom:1px solid var(--bdr)}
+.sb-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem}
+.sb-ic{width:30px;height:30px;border-radius:9px;background:var(--p);position:relative;overflow:hidden;flex-shrink:0}
+.sb-ic::before{content:'';position:absolute;top:50%;left:50%;width:48%;height:1.5px;background:rgba(255,255,255,.9);transform-origin:left center;animation:sweep 2.5s linear infinite}
+.sb-ic::after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.2);width:70%;height:70%;top:15%;left:15%}
+.sb-brand{font-size:14px;font-weight:800;color:var(--p)}
+.sb-user{background:var(--surf2);border-radius:var(--radsm);padding:.55rem .7rem;display:flex;align-items:center;gap:.5rem}
+.sb-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.sb-uname{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sb-urole{font-size:10px;color:var(--ink4)}
+.sb-nav{flex:1;padding:.65rem .55rem;overflow-y:auto;scrollbar-width:none}
+.sb-nav::-webkit-scrollbar{display:none}
+.sb-item{display:flex;align-items:center;gap:.55rem;padding:.58rem .7rem;border-radius:var(--radsm);cursor:pointer;transition:.12s;font-size:13px;font-weight:500;color:var(--ink3);margin-bottom:1px}
+.sb-item:hover{background:var(--surf2);color:var(--ink2)}
+.sb-item.on{background:var(--p3);color:var(--p);font-weight:700}
+.sb-item-ic{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:.7rem .9rem;border-top:1px solid var(--bdr)}
+.sb-logout{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;border-radius:var(--radsm);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink4);transition:.12s;width:100%;border:none;background:none}
+.sb-logout:hover{background:var(--r3);color:var(--r2)}
+.mob-bar{display:none;background:var(--surf);border-bottom:1px solid var(--bdr);padding:.6rem .9rem;align-items:center;gap:.6rem;position:sticky;top:0;z-index:200}
+@media(max-width:860px){.mob-bar{display:flex}}
+.mob-ham{width:34px;height:34px;border-radius:var(--radsm);border:1.5px solid var(--bdr);background:var(--surf2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0}
+.mob-ham span{display:block;width:14px;height:1.5px;background:var(--ink3);border-radius:99px}
+.mob-title{font-size:14px;font-weight:800;color:var(--p);flex:1}
+.mob-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;cursor:pointer}
+.drawer{position:fixed;inset:0;z-index:400;pointer-events:none}
+.drawer.on{pointer-events:all}
+.drawer-ov{position:absolute;inset:0;background:rgba(26,26,15,.4);opacity:0;transition:.24s}
+.drawer.on .drawer-ov{opacity:1}
+.drawer-panel{position:absolute;left:0;top:0;bottom:0;width:270px;background:var(--surf);transform:translateX(-100%);transition:.25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.drawer.on .drawer-panel{transform:none}
+.main-area{display:flex;flex-direction:column;min-height:100vh}
+.main-inner{flex:1;padding:1.4rem 1.5rem;max-width:960px;width:100%}
+@media(max-width:600px){.main-inner{padding:1rem .9rem}}
+.view{display:none;animation:vin .2s ease}
+.view.on{display:block}
+@keyframes vin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pg-hdr{margin-bottom:1.25rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+.pg-title{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.15rem}
+@media(max-width:600px){.pg-title{font-size:17px}}
+.pg-sub{font-size:12.5px;color:var(--ink3)}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rad);padding:1rem 1.15rem;margin-bottom:.85rem;box-shadow:var(--sh)}
+.card-ttl{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:.75rem}
+.inp{width:100%;padding:10px 12px;border-radius:var(--radsm);border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink);font-size:13.5px;outline:none;transition:.15s}
+.inp:focus{border-color:var(--p2);background:var(--surf);box-shadow:0 0 0 3px var(--p3)}
+.inp::placeholder{color:var(--ink4)}
+.slbl{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem;display:block}
+.btn{padding:10px 16px;border-radius:var(--radsm);border:none;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:.35rem;white-space:nowrap}
+.btn-p{background:var(--p);color:#fff;box-shadow:0 3px 12px rgba(30,58,95,.22)}
+.btn-p:hover{background:var(--p2)}
+.btn-p.full{width:100%;padding:12px}
+.btn-g{background:var(--g);color:#fff}
+.btn-g:hover{background:var(--g2)}
+.btn-g.full{width:100%;padding:12px}
+.btn-o{background:var(--surf);color:var(--ink2);border:1.5px solid var(--bdr)}
+.btn-o:hover{background:var(--surf2)}
+.btn-o.full{width:100%;padding:11px}
+.btn-o.danger{color:var(--r2)}
+.btn-o.danger:hover{background:var(--r3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:.45rem;flex-wrap:wrap}
+.btn-row .btn{flex:1;min-width:90px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.55rem;margin-bottom:.85rem}
+.stat-box{background:var(--surf2);border-radius:var(--radsm);padding:.8rem 1rem}
+.stat-val{font-size:24px;font-weight:800;color:var(--ink);font-family:'JetBrains Mono';letter-spacing:-.5px;line-height:1}
+.stat-lbl{font-size:10.5px;color:var(--ink3);margin-top:.3rem;font-weight:500}
+/* KELAS LIST */
+.kelas-list{display:flex;flex-direction:column;gap:.5rem}
+.kelas-card{background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--rad);overflow:hidden;box-shadow:var(--sh3);transition:.14s}
+.kelas-card.expanded{border-color:var(--p4);box-shadow:var(--sh)}
+.kelas-head{display:flex;align-items:center;gap:.65rem;padding:.85rem 1rem;cursor:pointer;user-select:none;-webkit-user-select:none}
+.kelas-head:hover{background:var(--surf2)}
+.kelas-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.kelas-nm{font-size:14px;font-weight:700;color:var(--ink)}
+.kelas-meta{font-size:11px;color:var(--ink4);margin-top:2px}
+.kelas-chev{font-size:11px;color:var(--ink4);transition:.2s;flex-shrink:0;margin-left:auto}
+.kelas-card.expanded .kelas-chev{transform:rotate(180deg)}
+.kelas-body{display:none;border-top:1px solid var(--bdr);padding:.9rem 1rem}
+.kelas-card.expanded .kelas-body{display:block}
+/* SESI */
+.sesi-list{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.75rem}
+.sesi-row{display:flex;align-items:center;gap:.55rem;padding:.6rem .75rem;background:var(--surf2);border-radius:var(--radsm);cursor:pointer;transition:.13s;border:1px solid transparent}
+.sesi-row:hover{background:var(--p3);border-color:var(--p4)}
+.sesi-num{font-family:'JetBrains Mono';font-size:10.5px;font-weight:700;color:var(--ink4);width:42px;flex-shrink:0}
+.sesi-nm{font-size:12.5px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sesi-dt{font-size:10px;color:var(--ink4);margin-top:1px}
+.sesi-mood{font-size:16px;flex-shrink:0}
+.sesi-resp{font-size:10px;color:var(--ink3);white-space:nowrap;font-family:'JetBrains Mono';font-weight:600;flex-shrink:0}
+.sesi-del{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:13px;padding:3px 5px;transition:.12s;border-radius:5px;flex-shrink:0}
+.sesi-del:hover{background:var(--r3);color:var(--r2)}
+.sesi-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+.sb-done{background:var(--g3);color:var(--g)}
+.sb-partial{background:var(--a3);color:var(--a)}
+.sb-empty{background:var(--surf3);color:var(--ink4)}
+.sb-live{background:var(--p3);color:var(--p2)}
+/* CHIPS */
+.chip-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.28rem;max-height:180px;overflow-y:auto;margin-bottom:.5rem}
+.chip{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--radsm);padding:.35rem .55rem;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;gap:.25rem}
+.chip-x{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;padding:0;flex-shrink:0;transition:.1s}
+.chip-x:hover{color:var(--r2)}
+.import-zone{border:2px dashed var(--bdr);border-radius:var(--radsm);padding:.8rem;text-align:center;cursor:pointer;transition:.14s;margin-bottom:.5rem;display:block}
+.import-zone:hover{border-color:var(--p4);background:var(--p3)}
+.import-zone input{display:none}
+/* MOOD */
+.mood-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}
+@media(max-width:480px){.mood-grid{grid-template-columns:repeat(3,1fr)}}
+.mood-btn{border:1.5px solid var(--bdr);border-radius:var(--radsm);padding:.65rem .2rem;text-align:center;cursor:pointer;transition:.15s;background:var(--surf)}
+.mood-btn:hover{border-color:var(--p4);background:var(--p3)}
+.mood-btn.chosen{border-width:2.5px;transform:scale(1.04)}
+.mood-ic{font-size:24px;display:block;margin-bottom:.25rem;line-height:1}
+.mood-nm{font-size:9.5px;color:var(--ink3);font-weight:600;display:block;line-height:1.3}
+/* SCAN */
+.prog-wrap{background:var(--surf2);border-radius:99px;height:5px;margin-bottom:.85rem;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--p2));border-radius:99px;transition:width .4s ease}
+.scan-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3);margin-bottom:.6rem}
+.student-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rad);padding:1.1rem;margin-bottom:.75rem;text-align:center;box-shadow:var(--sh)}
+.student-nm{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px;margin-bottom:.2rem}
+.student-sub{font-size:11.5px;color:var(--ink3)}
+.nav-row{display:flex;gap:.5rem;margin-top:.7rem}
+.nav-b{flex:1;padding:11px;border-radius:var(--radsm);border:1.5px solid var(--bdr);background:var(--surf);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+.nav-b:disabled{opacity:.35;cursor:not-allowed}
+.nav-b.nx{background:var(--p);color:#fff;border-color:var(--p)}
+.nav-b.nx:hover{background:var(--p2)}
+.skip-lnk{display:block;text-align:center;font-size:11.5px;color:var(--ink4);margin-top:.55rem;cursor:pointer;text-decoration:underline}
+/* LAPORAN */
+.bar-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.38rem}
+.bar-lbl{font-size:11px;color:var(--ink2);width:95px;flex-shrink:0;display:flex;align-items:center;gap:.3rem}
+.bar-track{flex:1;height:10px;background:var(--surf2);border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.bar-cnt{font-size:11px;color:var(--ink3);min-width:20px;text-align:right;font-family:'JetBrains Mono';font-weight:600}
+.plist{display:flex;flex-direction:column;gap:.25rem;max-height:240px;overflow-y:auto}
+.prow{display:flex;align-items:center;gap:.45rem;padding:.35rem .55rem;border-radius:var(--radxs);background:var(--surf2)}
+.prow-av{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0}
+.prow-nm{font-size:12px;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow-status{font-size:10px;white-space:nowrap}
+.alert{border-radius:var(--radsm);padding:.65rem .85rem;margin-bottom:.75rem;font-size:12.5px;line-height:1.6;border:1px solid;font-weight:500}
+.alert-r{background:var(--r3);color:var(--r);border-color:rgba(139,32,32,.18)}
+.alert-g{background:var(--g3);color:var(--g);border-color:rgba(13,92,58,.18)}
+.alert-a{background:var(--a3);color:var(--a);border-color:rgba(122,74,10,.18)}
+/* BANDING */
+.cmp-pill{padding:.3rem .75rem;border-radius:99px;font-size:11.5px;font-weight:600;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);cursor:pointer;transition:.13s;display:inline-flex;align-items:center;gap:.3rem}
+.cmp-pill.on{background:var(--p);color:#fff;border-color:var(--p)}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-table th{background:var(--surf2);padding:.45rem .65rem;text-align:left;font-size:9.5px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bdr)}
+.cmp-table td{padding:.45rem .65rem;border-bottom:1px solid var(--bdr2);color:var(--ink2)}
+.cmp-table tr:last-child td{border-bottom:none}
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(26,26,15,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;visibility:hidden;transition:.2s}
+.modal-ov.on{opacity:1;visibility:visible}
+.modal{background:var(--surf);border-radius:var(--rad);padding:1.4rem 1.5rem;width:100%;max-width:400px;box-shadow:var(--sh2);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:.25rem}
+.modal-sub{font-size:12.5px;color:var(--ink3);margin-bottom:1rem;line-height:1.5}
+.modal-err{font-size:12px;color:var(--r2);min-height:16px;margin-bottom:.45rem}
+.modal-btns{display:flex;gap:.4rem}
+/* QR */
+.qr-box{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rad);padding:1.35rem;display:inline-block;margin-bottom:.85rem;box-shadow:var(--sh)}
+.live-dot{width:7px;height:7px;background:var(--g2);border-radius:50%;animation:blink 1.5s infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+/* PELAJAR */
+.pmode{max-width:460px;margin:0 auto;padding:1rem}
+.pmode-moods{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-bottom:.85rem}
+@media(max-width:380px){.pmode-moods{grid-template-columns:repeat(3,1fr)}}
+.pmode-mood{border:2px solid var(--bdr);border-radius:12px;padding:.8rem .2rem;text-align:center;cursor:pointer;transition:.18s;background:var(--surf)}
+.pmode-mood:active{transform:scale(.96)}
+.pmode-mood.picked{transform:scale(1.05)}
+/* TETAPAN */
+.soal-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;background:var(--surf2);border-radius:var(--radsm);margin-bottom:.3rem}
+/* TOAST */
+.toast{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(55px);z-index:9999;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:.55rem 1.1rem;border-radius:99px;box-shadow:var(--sh2);opacity:0;transition:.27s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:88vw;text-align:center}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+.qgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-top:.85rem}
+@media(max-width:400px){.qgrid{grid-template-columns:1fr}}
+.lap-tabs{display:flex;gap:0;background:var(--surf2);border-radius:var(--radsm);padding:3px;margin-bottom:1rem}
+.lap-tab{flex:1;padding:.5rem;text-align:center;font-size:12.5px;font-weight:600;cursor:pointer;border-radius:8px;transition:.13s;color:var(--ink3)}
+.lap-tab.on{background:var(--surf);color:var(--ink);box-shadow:var(--sh3)}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-ic"></div>
+  <div class="sp-nm">Mood<em>Radar</em></div>
+  <div class="sp-tg">Platform Pengesan Mood Kelas</div>
+  <div class="sp-bar"><div class="sp-fill"></div></div>
+</div>
+
+<!-- MODAL KELAS -->
+<div class="modal-ov" id="modalK">
+  <div class="modal">
+    <div class="modal-title" id="mKTitle">&#10133; Tambah Kelas Baharu</div>
+    <div class="modal-sub">Isi nama kelas dan senarai pelajar.</div>
+    <div style="margin-bottom:.7rem"><span class="slbl">Nama Kelas</span><input class="inp" id="mKNama" placeholder="cth: 4 Sains, 5 Bestari..."></div>
+    <div style="margin-bottom:.35rem">
+      <span class="slbl">Tambah Pelajar</span>
+      <div style="display:flex;gap:.35rem;margin-bottom:.35rem"><input class="inp" id="mKPelajar" placeholder="Nama pelajar..." onkeydown="if(event.key==='Enter')mkAdd()" style="flex:1"><button class="btn btn-o" onclick="mkAdd()" style="padding:9px 14px;font-size:15px">+</button></div>
+      <label class="import-zone" for="mKCsv"><input type="file" id="mKCsv" accept=".csv,.txt" onchange="mkImport(event)"><div style="font-size:12px;font-weight:600;color:var(--ink3)">&#128193; Import .txt / .csv</div><div style="font-size:10.5px;color:var(--ink4)">Satu nama setiap baris</div></label>
+    </div>
+    <div style="margin-bottom:.5rem"><span class="slbl">Pelajar (<span id="mKCnt">0</span>)</span><div class="chip-wrap" id="mKChips"></div></div>
+    <div class="modal-err" id="mKErr"></div>
+    <div class="modal-btns"><button class="btn btn-o" style="flex:1" onclick="closeK()">Batal</button><button class="btn btn-p" style="flex:2" onclick="saveK()">Simpan Kelas</button></div>
+  </div>
+</div>
+
+<!-- MODAL SESI -->
+<div class="modal-ov" id="modalS">
+  <div class="modal">
+    <div class="modal-title">&#10133; Tambah Sesi Baharu</div>
+    <div class="modal-sub" id="mSSub">Sesi baharu untuk kelas ini.</div>
+    <div style="margin-bottom:.75rem"><span class="slbl">Label Sesi</span><input class="inp" id="mSLabel" placeholder="cth: Pagi, Lepas Rehat, Minggu 3..."></div>
+    <div class="modal-btns"><button class="btn btn-o" style="flex:1" onclick="closeS()">Batal</button><button class="btn btn-p" style="flex:2" onclick="createS()">Mula Sesi &#8594;</button></div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="auth-layout">
+    <div class="auth-brand">
+      <div class="a-ring" style="width:180px;height:180px"></div>
+      <div class="a-ring" style="width:320px;height:320px"></div>
+      <div class="a-ring" style="width:480px;height:480px"></div>
+      <div style="position:relative;z-index:1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:2.5rem"><div class="a-bic"></div><div style="font-size:20px;font-weight:800;color:#fff">MoodRadar PRO</div></div>
+        <div style="font-size:28px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.7px;margin-bottom:.85rem">Fahami <span style="color:var(--p4)">emosi pelajar</span> anda setiap hari</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:2rem">Platform pengesan mood kelas masa nyata. Setiap guru mempunyai data tersendiri yang tidak boleh dilihat oleh pengguna lain.</div>
+        <div style="display:flex;flex-direction:column;gap:.55rem">
+          <div style="display:flex;align-items:center;gap:.55rem;font-size:12.5px;color:rgba(255,255,255,.65)"><span style="width:5px;height:5px;border-radius:50%;background:var(--p4);flex-shrink:0;display:inline-block"></span>Pelbagai kelas, pelbagai sesi per kelas</div>
+          <div style="display:flex;align-items:center;gap:.55rem;font-size:12.5px;color:rgba(255,255,255,.65)"><span style="width:5px;height:5px;border-radius:50%;background:var(--p4);flex-shrink:0;display:inline-block"></span>Akses pelajar melalui QR code tanpa kata laluan</div>
+          <div style="display:flex;align-items:center;gap:.55rem;font-size:12.5px;color:rgba(255,255,255,.65)"><span style="width:5px;height:5px;border-radius:50%;background:var(--p4);flex-shrink:0;display:inline-block"></span>Laporan & perbandingan antara kelas</div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-panel">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:1.75rem"><div style="width:36px;height:36px;border-radius:10px;background:var(--p);position:relative;overflow:hidden;flex-shrink:0" class="a-bic"></div><div style="font-size:17px;font-weight:800;color:var(--p)">MoodRadar <span style="font-weight:400;color:var(--ink4);font-size:12px">PRO</span></div></div>
+      <div class="a-tabs"><div class="a-tab on" id="atL" onclick="switchA('login')">Log Masuk</div><div class="a-tab" id="atR" onclick="switchA('reg')">Daftar</div></div>
+      <div id="loginForm">
+        <div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.25rem">Selamat kembali &#128075;</div>
+        <div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">Log masuk ke akaun Mood Radar anda.</div>
+        <div class="a-err" id="loginErr"></div>
+        <div class="fld"><label class="fld-lbl">Nama Pengguna</label><input class="fld-inp" id="loginU" placeholder="nama.pengguna" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginP').focus()"></div>
+        <div class="fld"><label class="fld-lbl">Kata Laluan</label><input class="fld-inp" id="loginP" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="a-btn" onclick="doLogin()">Log Masuk &#8594;</button>
+        <div style="font-size:11.5px;color:var(--ink4);text-align:center;margin-top:.85rem">Demo: <b style="color:var(--ink3)">guru1</b> / <b style="color:var(--ink3)">password1</b></div>
+      </div>
+      <div id="regForm" style="display:none">
+        <div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.25rem">Buat akaun &#127891;</div>
+        <div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">Data anda hanya milik anda sepenuhnya.</div>
+        <div class="a-err" id="regErr"></div>
+        <div class="fld"><label class="fld-lbl">Nama Penuh</label><input class="fld-inp" id="regNm" placeholder="Cikgu Ahmad bin Ali"></div>
+        <div class="fld"><label class="fld-lbl">Nama Pengguna</label><input class="fld-inp" id="regU" placeholder="cikgu.ahmad" autocomplete="username"></div>
+        <div class="fld"><label class="fld-lbl">Kata Laluan</label><input class="fld-inp" id="regP" type="password" placeholder="Min 6 aksara" autocomplete="new-password"></div>
+        <div class="fld"><label class="fld-lbl">Sekolah</label><input class="fld-inp" id="regSk" placeholder="SMK Contoh, Kuala Lumpur"></div>
+        <button class="a-btn" onclick="doReg()">Buat Akaun &#8594;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <!-- DRAWER -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-ov" onclick="closeDrawer()"></div>
+    <div class="drawer-panel">
+      <div style="padding:.9rem;border-bottom:1px solid var(--bdr)">
+        <div class="sb-logo"><div class="sb-ic"></div><div class="sb-brand">MoodRadar PRO</div></div>
+        <div id="dLogoWrap" style="margin-bottom:.55rem;display:none"><img id="dLogoImg" src="" style="height:40px;max-width:100%;object-fit:contain;border-radius:var(--radsm);display:block"></div>
+        <div class="sb-user"><div class="sb-av" id="dAv">G</div><div style="min-width:0;flex:1"><div class="sb-uname" id="dUn">Guru</div><div class="sb-urole" id="dSk">Sekolah</div></div></div>
+      </div>
+      <div class="sb-nav" id="dNav"></div>
+      <div class="sb-foot"><button class="sb-logout" onclick="doLogout()">&#128682; Log Keluar</button></div>
+    </div>
+  </div>
+
+  <div class="app-wrap">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-top">
+        <div class="sb-logo"><div class="sb-ic"></div><div class="sb-brand">MoodRadar PRO</div></div>
+        <div id="sbLogoWrap" style="margin-bottom:.55rem;display:none"><img id="sbLogoImg" src="" style="height:44px;max-width:100%;object-fit:contain;border-radius:var(--radsm);display:block"></div>
+        <div class="sb-user"><div class="sb-av" id="sbAv">G</div><div style="min-width:0;flex:1"><div class="sb-uname" id="sbUn">Guru</div><div class="sb-urole" id="sbSk">Sekolah</div></div></div>
+      </div>
+      <div class="sb-nav" id="sbNav"></div>
+      <div class="sb-foot"><button class="sb-logout" onclick="doLogout()">&#128682; Log Keluar</button></div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-area">
+      <div class="mob-bar">
+        <div class="mob-ham" onclick="openDrawer()"><span></span><span></span><span></span></div>
+        <div id="mobLogoWrap" style="display:none"><img id="mobLogoImg" src="" style="height:28px;max-width:80px;object-fit:contain;border-radius:5px"></div>
+        <div class="mob-title" id="mobT">Dashboard</div>
+        <div class="mob-av" id="mobAv" onclick="openDrawer()">G</div>
+      </div>
+      <div class="main-inner">
+        <div class="view on" id="v-dash">
+          <div class="pg-hdr"><div><div class="pg-title" id="dGreet">Selamat datang!</div><div class="pg-sub">Ringkasan aktiviti anda</div></div></div>
+          <div id="dashC"></div>
+        </div>
+        <div class="view" id="v-kelas">
+          <div class="pg-hdr">
+            <div><div class="pg-title">&#127979; Kelas Saya</div><div class="pg-sub">Urus kelas dan sesi imbasan mood</div></div>
+            <button class="btn btn-p" onclick="openK()">&#10133; Tambah Kelas</button>
+          </div>
+          <div id="kelasC"></div>
+        </div>
+        <div class="view" id="v-imbas">
+          <div class="pg-hdr"><div><div class="pg-title" id="imbasT">&#128225; Imbas Mood</div><div class="pg-sub" id="imbasS">Rakam mood pelajar</div></div></div>
+          <div id="imbasC"></div>
+        </div>
+        <div class="view" id="v-qr">
+          <div class="pg-hdr"><div><div class="pg-title">&#128241; Sesi QR</div><div class="pg-sub">Pelajar imbas dengan telefon sendiri</div></div></div>
+          <div id="qrC"></div>
+        </div>
+        <div class="view" id="v-lap">
+          <div class="pg-hdr"><div><div class="pg-title">&#128202; Laporan</div><div class="pg-sub" id="lapS">Pilih kelas dan sesi</div></div></div>
+          <div id="lapC"></div>
+        </div>
+        <div class="view" id="v-band">
+          <div class="pg-hdr"><div><div class="pg-title">&#9878;&#65039; Banding Kelas</div><div class="pg-sub">Perbandingan antara semua kelas</div></div></div>
+          <div id="bandC"></div>
+        </div>
+        <div class="view" id="v-set">
+          <div class="pg-hdr"><div><div class="pg-title">&#9881;&#65039; Tetapan</div><div class="pg-sub">Urus akaun dan konfigurasi</div></div></div>
+          <div id="setC"></div>
+        </div>
+        <div class="view" id="v-pel">
+          <div class="pmode" id="pelS"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──
+var MOODS=[
+  {e:'😄',l:'Sangat Gembira',c:'#1A9E6A',bg:'#E0F5EC'},
+  {e:'🙂',l:'Baik',c:'#2D5F9E',bg:'#E8F0FA'},
+  {e:'😐',l:'Ok Sahaja',c:'#7A7860',bg:'#F0EDE6'},
+  {e:'😔',l:'Sedih',c:'#E8960E',bg:'#FEF0D6'},
+  {e:'😟',l:'Risau',c:'#D94040',bg:'#FAEAEA'},
+  {e:'😴',l:'Mengantuk',c:'#8B6BB1',bg:'#F3EDFA'},
+  {e:'😤',l:'Tertekan',c:'#D85A30',bg:'#FAECE7'},
+  {e:'😑',l:'Bosan',c:'#5C5C4A',bg:'#EDEBE4'}
+];
+var KC=['#2D5F9E','#1A9E6A','#D85A30','#E8960E','#8B6BB1','#D94040','#0D5C3A','#7A4A0A'];
+var NAV=[
+  {id:'dash',ic:'🏠',lb:'Dashboard'},
+  {id:'kelas',ic:'🏫',lb:'Kelas Saya'},
+  {id:'imbas',ic:'📡',lb:'Imbas Mood'},
+  {id:'qr',ic:'📱',lb:'Sesi QR'},
+  {id:'lap',ic:'📊',lb:'Laporan'},
+  {id:'band',ic:'⚖️',lb:'Banding Kelas'},
+  {id:'set',ic:'⚙️',lb:'Tetapan'}
+];
+
+// ── STORAGE ──
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function lg(k,d){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):d}catch(e){return d}}
+var CUR='';
+function us(k,v){ls('u_'+CUR+'_'+k,v)}
+function ug(k,d){return lg('u_'+CUR+'_'+k,d)}
+function getU(){return lg('__users__',{})}
+function getKD(){return ug('kd',[])}
+function setKD(d){us('kd',d)}
+function getSQ(){return ug('sq',[
+  {id:'s1',teks:'Bagaimana perasaan awak sekarang?',aktif:true,useMood:true},
+  {id:'s2',teks:'Adakah awak faham pelajaran hari ini?',aktif:false,useMood:false,ops:['Sangat Faham','Faham','Kurang Faham','Tidak Faham']},
+  {id:'s3',teks:'Tahap tenaga awak sekarang?',aktif:false,useMood:false,ops:['Sangat Bertenaga','Bertenaga','Sedikit Lesu','Sangat Lesu']}
+])}
+
+// ── STATE ──
+var scanKIds=[]; // array — support single or merged kelas
+var scanSIds={}; // {kelasId: sesiId}
+var scanAllP=[]; // merged pelajar list
+var scanIdx=0, scanDone=false;
+var qrT=null, qrQId='', qrKId='', qrSId='';
+var mkP=[], editKi=-1, pendKId='';
+var actKId='';
+var cmpSel=[];
+var lapKId='', lapSId='', lapMod='sesi';
+var imbasMerge=false; // true = cantuman kelas
+
+// ── SEED DEMO ──
+(function(){
+  var u=getU();
+  if(!u.guru1){u.guru1={username:'guru1',password:btoa('password1'),nama:'Cikgu Aminah',sekolah:'SMK Bangsar',color:'#2D5F9E'};ls('__users__',u)}
+  if(!u.guru2){u.guru2={username:'guru2',password:btoa('password2'),nama:'Cikgu Rahman',sekolah:'SMK Petaling',color:'#1A9E6A'};ls('__users__',u)}
+})();
+
+// ── INIT ──
+setTimeout(function(){
+  document.getElementById('splash').classList.add('out');
+  var s=lg('__session__',null);
+  if(s&&getU()[s]) loginU(s);
+  else document.getElementById('authScreen').style.display='block';
+  chkQRP();
+},2000);
+
+// ── TOAST ──
+function toast(m,d){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},d||2500)}
+
+// ── AUTH ──
+function switchA(tab){
+  document.getElementById('atL').classList.toggle('on',tab==='login');
+  document.getElementById('atR').classList.toggle('on',tab==='reg');
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('regForm').style.display=tab==='reg'?'block':'none';
+}
+function doLogin(){
+  var u=document.getElementById('loginU').value.trim().toLowerCase();
+  var p=document.getElementById('loginP').value;
+  var e=document.getElementById('loginErr');
+  if(!u||!p){e.textContent='Sila isi semua ruangan.';e.classList.add('on');return}
+  var users=getU();
+  if(!users[u]||users[u].password!==btoa(p)){e.textContent='Nama pengguna atau kata laluan salah.';e.classList.add('on');return}
+  e.classList.remove('on'); ls('__session__',u); loginU(u);
+}
+function doReg(){
+  var nm=document.getElementById('regNm').value.trim();
+  var u=document.getElementById('regU').value.trim().toLowerCase().replace(/[^a-z0-9._]/g,'');
+  var p=document.getElementById('regP').value;
+  var sk=document.getElementById('regSk').value.trim();
+  var e=document.getElementById('regErr');
+  if(!nm||!u||!p||!sk){e.textContent='Sila isi semua ruangan.';e.classList.add('on');return}
+  if(u.length<3){e.textContent='Nama pengguna terlalu pendek.';e.classList.add('on');return}
+  if(p.length<6){e.textContent='Min 6 aksara.';e.classList.add('on');return}
+  var users=getU();
+  if(users[u]){e.textContent='Nama pengguna sudah digunakan.';e.classList.add('on');return}
+  users[u]={username:u,password:btoa(p),nama:nm,sekolah:sk,color:KC[Object.keys(users).length%KC.length]};
+  ls('__users__',users); ls('__session__',u); e.classList.remove('on');
+  loginU(u); toast('Akaun berjaya dicipta!');
+}
+function doLogout(){
+  if(!confirm('Log keluar?'))return;
+  ls('__session__',null); CUR='';
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('authScreen').style.display='block';
+  closeDrawer();
+}
+function loginU(un){
+  CUR=un; var user=getU()[un];
+  var init=user.nama.split(' ').map(function(w){return w[0]}).join('').slice(0,2).toUpperCase();
+  ['sbAv','dAv','mobAv'].forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=init;el.style.background=user.color}});
+  document.getElementById('sbUn').textContent=user.nama;
+  document.getElementById('sbSk').textContent=user.sekolah;
+  document.getElementById('dUn').textContent=user.nama;
+  document.getElementById('dSk').textContent=user.sekolah;
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+  buildNav(); updateLogoHeader(); gotoV('dash');
+}
+
+// ── NAV ──
+function buildNav(){
+  var h=NAV.map(function(n){
+    return '<div class="sb-item" id="nav-'+n.id+'" data-view="'+n.id+'"><span class="sb-item-ic">'+n.ic+'</span>'+n.lb+'</div>';
+  }).join('');
+  document.getElementById('sbNav').innerHTML=h;
+  document.getElementById('dNav').innerHTML=h;
+  document.getElementById('sbNav').addEventListener('click', navClick);
+  document.getElementById('dNav').addEventListener('click', navClick);
+}
+function navClick(e){
+  var item=e.target.closest('.sb-item');
+  if(!item)return;
+  gotoV(item.dataset.view);
+  closeDrawer();
+}
+function gotoV(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
+  document.querySelectorAll('.sb-item').forEach(function(n){n.classList.remove('on')});
+  var vEl=document.getElementById('v-'+id);
+  if(vEl) vEl.classList.add('on');
+  document.querySelectorAll('#nav-'+id).forEach(function(el){el.classList.add('on')});
+  var n=NAV.find(function(x){return x.id===id});
+  document.getElementById('mobT').textContent=n?(n.ic+' '+n.lb):'';
+  if(id==='dash') rDash();
+  if(id==='kelas') rKelas();
+  if(id==='imbas') rImbas();
+  if(id==='qr') rQR();
+  if(id==='lap') rLap();
+  if(id==='band') rBand();
+  if(id==='set') rSet();
+  window.scrollTo(0,0);
+}
+function openDrawer(){document.getElementById('drawer').classList.add('on');document.body.style.overflow='hidden'}
+function closeDrawer(){document.getElementById('drawer').classList.remove('on');document.body.style.overflow=''}
+
+// ── HELPERS ──
+function topM(resp){
+  if(!resp)return null;
+  var r=Object.values(resp).filter(function(x){return!x.skip&&x.moodIdx>=0});
+  if(!r.length)return null;
+  var mc={};r.forEach(function(x){mc[x.moodIdx]=(mc[x.moodIdx]||0)+1});
+  return MOODS[Object.keys(mc).reduce(function(a,b){return mc[a]>=mc[b]?a:b})]||null;
+}
+function fmtDt(ts){return new Date(ts).toLocaleString('ms-MY',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function fmtDtS(ts){return new Date(ts).toLocaleString('ms-MY',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── DASHBOARD ──
+function rDash(){
+  var user=getU()[CUR]||{};
+  var hr=new Date().getHours();
+  document.getElementById('dGreet').textContent=(hr<12?'Selamat Pagi':hr<17?'Selamat Tengahari':'Selamat Petang')+', '+user.nama+'!';
+  var kd=getKD();
+  var tS=kd.reduce(function(a,k){return a+k.sesiList.length},0);
+  var dS=kd.reduce(function(a,k){return a+k.sesiList.filter(function(s){return s.done}).length},0);
+  var todS=kd.reduce(function(a,k){return a+k.sesiList.filter(function(s){return new Date(s.ts).toDateString()===new Date().toDateString()}).length},0);
+  var rec=kd.flatMap(function(k){return k.sesiList.map(function(s){return{id:s.id,label:s.label,ts:s.ts,resp:s.responses,kId:k.id,kNm:k.nama,kW:k.warna}})}).sort(function(a,b){return b.ts-a.ts}).slice(0,4);
+  var rH='';
+  if(rec.length){
+    rH='<div class="card"><div class="card-ttl">🕐 Aktiviti Terkini</div><div id="recList"></div></div>';
+  }
+  document.getElementById('dashC').innerHTML=
+    '<div class="stat-grid">'
+    +'<div class="stat-box"><div class="stat-val">'+kd.length+'</div><div class="stat-lbl">Kelas</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+tS+'</div><div class="stat-lbl">Jumlah Sesi</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+todS+'</div><div class="stat-lbl">Hari Ini</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+dS+'</div><div class="stat-lbl">Selesai</div></div>'
+    +'</div>'+rH
+    +'<div class="qgrid">'
+    +'<button class="btn btn-p" id="dBtnKelas">🏫 Urus Kelas</button>'
+    +'<button class="btn btn-p" style="background:var(--g)" id="dBtnQR">📱 Jana QR</button>'
+    +'<button class="btn btn-o" id="dBtnLap">📊 Laporan</button>'
+    +'<button class="btn btn-o" id="dBtnBand">⚖️ Banding</button>'
+    +'</div>';
+  document.getElementById('dBtnKelas').onclick=function(){gotoV('kelas')};
+  document.getElementById('dBtnQR').onclick=function(){gotoV('qr')};
+  document.getElementById('dBtnLap').onclick=function(){gotoV('lap')};
+  document.getElementById('dBtnBand').onclick=function(){gotoV('band')};
+  if(rec.length){
+    var rl=document.getElementById('recList');
+    rec.forEach(function(s){
+      var tm=topM(s.resp);
+      var cnt=Object.values(s.resp||{}).filter(function(r){return!r.skip}).length;
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--bdr2);cursor:pointer';
+      row.innerHTML='<span style="width:9px;height:9px;border-radius:50%;background:'+s.kW+';display:inline-block;flex-shrink:0"></span>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.kNm)+' — '+esc(s.label)+'</div>'
+        +'<div style="font-size:10px;color:var(--ink4)">'+fmtDtS(s.ts)+'</div></div>'
+        +'<span style="font-size:16px">'+(tm?tm.e:'—')+'</span>'
+        +'<span style="font-size:10px;font-family:\'JetBrains Mono\';font-weight:700;color:var(--ink3)">'+cnt+'/'+Object.keys(s.resp||{}).length+'</span>';
+      row.addEventListener('click', (function(kId,sId){return function(){openLS(kId,sId)}})(s.kId,s.id));
+      rl.appendChild(row);
+    });
+  }
+}
+
+// ── KELAS VIEW ──
+function rKelas(){
+  var kd=getKD();
+  var el=document.getElementById('kelasC');
+  el.innerHTML='';
+
+  // Header row with mode tabs
+  var hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;gap:0;background:var(--surf2);border-radius:var(--radsm);padding:3px;margin-bottom:1rem';
+  hdr.innerHTML='<div class="lap-tab on" id="kTabSingle">📋 Satu Kelas</div>'
+    +'<div class="lap-tab" id="kTabAll">📚 Semua Kelas</div>';
+  el.appendChild(hdr);
+
+  var cont=document.createElement('div');
+  cont.id='kelasBody';
+  el.appendChild(cont);
+
+  document.getElementById('kTabSingle').onclick=function(){
+    document.getElementById('kTabSingle').classList.add('on');
+    document.getElementById('kTabAll').classList.remove('on');
+    renderKelasBody('single');
+  };
+  document.getElementById('kTabAll').onclick=function(){
+    document.getElementById('kTabAll').classList.add('on');
+    document.getElementById('kTabSingle').classList.remove('on');
+    renderKelasBody('all');
+  };
+  renderKelasBody('single');
+}
+
+function renderKelasBody(mode){
+  var kd=getKD();
+  var cont=document.getElementById('kelasBody');
+  cont.innerHTML='';
+
+  if(!kd.length){
+    cont.innerHTML='<div class="card" style="text-align:center;padding:2rem">'
+      +'<div style="font-size:36px;margin-bottom:.75rem">🏫</div>'
+      +'<div style="font-size:14px;font-weight:700;margin-bottom:.3rem">Belum ada kelas</div>'
+      +'<div style="font-size:12.5px;color:var(--ink3);margin-bottom:1rem">Tambah kelas pertama anda untuk mula.</div>'
+      +'<button class="btn btn-p" id="emptyAddBtn">➕ Tambah Kelas Baharu</button></div>';
+    document.getElementById('emptyAddBtn').onclick=openK;
+    return;
+  }
+
+  if(mode==='single'){
+    // Accordion list — click to expand ONE kelas
+    var list=document.createElement('div');
+    list.className='kelas-list';
+    kd.forEach(function(k,ki){
+      list.appendChild(buildKelasCard(k,ki,kd));
+    });
+    cont.appendChild(list);
+  } else {
+    // All kelas summary grid
+    var grid=document.createElement('div');
+    grid.style.cssText='display:flex;flex-direction:column;gap:.6rem';
+    kd.forEach(function(k,ki){
+      var card=document.createElement('div');
+      card.className='card';
+      card.style.padding='.9rem 1.15rem';
+      var allR=k.sesiList.flatMap(function(s){return Object.values(s.responses||{}).filter(function(r){return!r.skip})});
+      var mc={};MOODS.forEach(function(m){mc[m.l]=0});allR.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+      var tm=allR.length?MOODS.reduce(function(a,b){return mc[a.l]>=mc[b.l]?a:b}):{e:'—'};
+      var pos=(mc['Sangat Gembira']||0)+(mc['Baik']||0);
+      var neg=(mc['Sedih']||0)+(mc['Risau']||0)+(mc['Mengantuk']||0)+(mc['Tertekan']||0);
+      card.innerHTML='<div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem">'
+        +'<span style="width:11px;height:11px;border-radius:50%;background:'+k.warna+';flex-shrink:0;display:inline-block"></span>'
+        +'<span style="font-size:14px;font-weight:800;flex:1">'+esc(k.nama)+'</span>'
+        +'<span style="font-size:10.5px;color:var(--ink4)">'+k.pelajar.length+' pelajar · '+k.sesiList.length+' sesi</span>'
+        +'</div>'
+        +'<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:.75rem">'
+        +'<div class="stat-box"><div class="stat-val" style="font-size:20px">'+tm.e+'</div><div class="stat-lbl">Dominan</div></div>'
+        +'<div class="stat-box"><div class="stat-val" style="font-size:18px;color:var(--g2)">'+(allR.length?Math.round(pos/allR.length*100):0)+'%</div><div class="stat-lbl">Positif</div></div>'
+        +'<div class="stat-box"><div class="stat-val" style="font-size:18px;color:var(--r2)">'+(allR.length?Math.round(neg/allR.length*100):0)+'%</div><div class="stat-lbl">Negatif</div></div>'
+        +'<div class="stat-box"><div class="stat-val" style="font-size:18px">'+allR.length+'</div><div class="stat-lbl">Respons</div></div>'
+        +'</div>'
+        +'<div class="btn-row">'
+        +'<button class="btn btn-p k-add-sesi" data-ki="'+ki+'" data-kid="'+k.id+'">➕ Tambah Sesi</button>'
+        +'<button class="btn btn-o k-qr" data-kid="'+k.id+'">📱 Jana QR</button>'
+        +'<button class="btn btn-o k-lap" data-kid="'+k.id+'">📊 Laporan</button>'
+        +'<button class="btn btn-o k-edit" data-ki="'+ki+'">✏️ Edit</button>'
+        +'<button class="btn btn-o danger k-del" data-kid="'+k.id+'" data-knm="'+esc(k.nama)+'">🗑 Padam</button>'
+        +'</div>';
+      grid.appendChild(card);
+    });
+    cont.appendChild(grid);
+    attachKelasEvents(cont);
+  }
+}
+
+function buildKelasCard(k, ki, kd){
+  var isE=actKId===k.id;
+  var wrap=document.createElement('div');
+  wrap.className='kelas-card'+(isE?' expanded':'');
+  wrap.id='kc-'+k.id;
+
+  // Head
+  var head=document.createElement('div');
+  head.className='kelas-head';
+  head.innerHTML='<div class="kelas-dot" style="background:'+k.warna+'"></div>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div class="kelas-nm">'+esc(k.nama)+'</div>'
+    +'<div class="kelas-meta">'+k.pelajar.length+' pelajar · '+k.sesiList.length+' sesi · '+k.sesiList.filter(function(s){return s.done}).length+' selesai</div>'
+    +'</div><span class="kelas-chev">▼</span>';
+  head.addEventListener('click', (function(kid){return function(){togK(kid)}})(k.id));
+  wrap.appendChild(head);
+
+  // Body
+  var body=document.createElement('div');
+  body.className='kelas-body';
+  if(isE){
+    body.appendChild(buildSesiList(k));
+    var btnRow=document.createElement('div');
+    btnRow.className='btn-row';
+    btnRow.style.flexWrap='wrap';
+    btnRow.innerHTML='<button class="btn btn-p k-add-sesi" data-kid="'+k.id+'">➕ Tambah Sesi</button>'
+      +'<button class="btn btn-o k-imbas-now" data-kid="'+k.id+'">📡 Imbas Terus</button>'
+      +'<button class="btn btn-o k-qr" data-kid="'+k.id+'">📱 Jana QR</button>'
+      +'<button class="btn btn-o k-edit" data-ki="'+ki+'">✏️ Edit</button>'
+      +'<button class="btn btn-o danger k-del" data-kid="'+k.id+'" data-knm="'+esc(k.nama)+'">🗑 Padam</button>';
+    body.appendChild(btnRow);
+    attachKelasEvents(body);
+  }
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function buildSesiList(k){
+  var wrap=document.createElement('div');
+  if(!k.sesiList.length){
+    wrap.innerHTML='<div style="font-size:12.5px;color:var(--ink4);margin-bottom:.75rem;padding:.3rem 0">Belum ada sesi. Klik "Tambah Sesi" untuk mula.</div>';
+    return wrap;
+  }
+  var list=document.createElement('div');
+  list.className='sesi-list';
+  k.sesiList.forEach(function(s,si){
+    var resp=Object.values(s.responses||{});
+    var done=resp.filter(function(r){return!r.skip}).length;
+    var tm=topM(s.responses);
+    var isLive=scanKIds.length&&scanKIds[0]===k.id&&scanSIds[k.id]===s.id&&!scanDone;
+    var badge=isLive?'<span class="sesi-badge sb-live">Berjalan</span>'
+      :s.done?'<span class="sesi-badge sb-done">Selesai</span>'
+      :done>0?'<span class="sesi-badge sb-partial">Separa ('+done+'/'+k.pelajar.length+')</span>'
+      :'<span class="sesi-badge sb-empty">Kosong</span>';
+    var row=document.createElement('div');
+    row.className='sesi-row';
+    row.innerHTML='<span class="sesi-num">Sesi '+(si+1)+'</span>'
+      +'<div style="flex:1;min-width:0"><div class="sesi-nm">'+esc(s.label)+'</div>'
+      +'<div class="sesi-dt">'+fmtDt(s.ts)+'</div></div>'
+      +badge
+      +'<span class="sesi-mood">'+(tm?tm.e:'—')+'</span>'
+      +'<span class="sesi-resp">'+done+'/'+k.pelajar.length+'</span>'
+      +'<button class="sesi-del" title="Padam sesi" data-kid="'+k.id+'" data-sid="'+s.id+'">🗑</button>';
+    // Click row = open laporan
+    row.addEventListener('click', (function(kid,sid){return function(e){if(!e.target.classList.contains('sesi-del'))openLS(kid,sid)}})(k.id,s.id));
+    // Delete button
+    row.querySelector('.sesi-del').addEventListener('click', function(e){
+      e.stopPropagation();
+      var kid=this.dataset.kid, sid=this.dataset.sid;
+      if(!confirm('Padam sesi ini? Data tidak boleh dipulihkan.'))return;
+      var kd=getKD();
+      var kk=kd.find(function(x){return x.id===kid});
+      if(kk){kk.sesiList=kk.sesiList.filter(function(ss){return ss.id!==sid});setKD(kd)}
+      toast('Sesi dipadam.');rKelas();
+    });
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function attachKelasEvents(container){
+  // Add sesi
+  container.querySelectorAll('.k-add-sesi').forEach(function(btn){
+    btn.onclick=function(){openS(this.dataset.kid)};
+  });
+  // Imbas terus
+  container.querySelectorAll('.k-imbas-now').forEach(function(btn){
+    btn.onclick=function(){openS(this.dataset.kid)};
+  });
+  // QR
+  container.querySelectorAll('.k-qr').forEach(function(btn){
+    btn.onclick=function(){openQRK(this.dataset.kid)};
+  });
+  // Edit
+  container.querySelectorAll('.k-edit').forEach(function(btn){
+    btn.onclick=function(){editK(parseInt(this.dataset.ki))};
+  });
+  // Delete kelas
+  container.querySelectorAll('.k-del').forEach(function(btn){
+    btn.onclick=function(){
+      var kid=this.dataset.kid, knm=this.dataset.knm;
+      if(!confirm('Padam kelas "'+knm+'" dan SEMUA sesinya? Tidak boleh dipulihkan.'))return;
+      var kd=getKD();
+      setKD(kd.filter(function(x){return x.id!==kid}));
+      if(actKId===kid) actKId='';
+      toast('Kelas "'+knm+'" dipadam.');
+      rKelas();
+    };
+  });
+  // Laporan
+  container.querySelectorAll('.k-lap').forEach(function(btn){
+    btn.onclick=function(){
+      lapKId=this.dataset.kid; lapSId=''; lapMod='kelas';
+      gotoV('lap');
+    };
+  });
+}
+
+function togK(id){actKId=actKId===id?'':id; rKelas()}
+
+// ── MODAL KELAS ──
+function openK(){
+  editKi=-1; mkP=[];
+  document.getElementById('mKTitle').textContent='➕ Tambah Kelas Baharu';
+  document.getElementById('mKNama').value='';
+  document.getElementById('mKErr').textContent='';
+  rMkC();
+  document.getElementById('modalK').classList.add('on');
+  setTimeout(function(){document.getElementById('mKNama').focus()},100);
+}
+function editK(ki){
+  var kd=getKD(); var k=kd[ki]; if(!k)return;
+  editKi=ki; mkP=[].concat(k.pelajar);
+  document.getElementById('mKTitle').textContent='✏️ Edit: '+k.nama;
+  document.getElementById('mKNama').value=k.nama;
+  document.getElementById('mKErr').textContent='';
+  rMkC();
+  document.getElementById('modalK').classList.add('on');
+}
+function closeK(){document.getElementById('modalK').classList.remove('on')}
+function mkAdd(){
+  var inp=document.getElementById('mKPelajar');
+  var nm=inp.value.trim(); if(!nm)return;
+  if(!mkP.includes(nm)){mkP.push(nm); rMkC()}
+  inp.value=''; inp.focus();
+}
+function mkRemP(i){mkP.splice(i,1); rMkC()}
+function mkImport(ev){
+  var f=ev.target.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var lines=e.target.result.split(/\r?\n/).map(function(x){return x.split(',')[0].trim()}).filter(function(x){return x});
+    var added=0;
+    lines.forEach(function(nm){if(!mkP.includes(nm)){mkP.push(nm);added++}});
+    rMkC(); toast(added+' pelajar diimport!');
+  };
+  r.readAsText(f); ev.target.value='';
+}
+function rMkC(){
+  document.getElementById('mKCnt').textContent=mkP.length;
+  var chips=document.getElementById('mKChips');
+  chips.innerHTML='';
+  if(!mkP.length){chips.innerHTML='<div style="font-size:11.5px;color:var(--ink4);grid-column:1/-1;padding:.25rem">Belum ada pelajar.</div>';return}
+  mkP.forEach(function(nm,i){
+    var chip=document.createElement('div');
+    chip.className='chip';
+    chip.innerHTML='<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(nm)+'</span>';
+    var x=document.createElement('button');
+    x.className='chip-x'; x.textContent='✕';
+    x.addEventListener('click', (function(idx){return function(){mkRemP(idx)}})(i));
+    chip.appendChild(x);
+    chips.appendChild(chip);
+  });
+}
+function saveK(){
+  var nm=document.getElementById('mKNama').value.trim();
+  var e=document.getElementById('mKErr');
+  if(!nm){e.textContent='Sila masukkan nama kelas.';return}
+  if(!mkP.length){e.textContent='Sila tambah sekurang-kurangnya 1 pelajar.';return}
+  e.textContent='';
+  var kd=getKD();
+  if(editKi>=0){kd[editKi].nama=nm; kd[editKi].pelajar=[].concat(mkP)}
+  else kd.push({id:'k'+Date.now(),nama:nm,warna:KC[kd.length%KC.length],pelajar:[].concat(mkP),sesiList:[]});
+  setKD(kd); closeK(); rKelas();
+  toast(editKi>=0?'Kelas dikemaskini!':'Kelas ditambah!');
+}
+
+// ── MODAL SESI ──
+function openS(kId){
+  pendKId=kId;
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); if(!k)return;
+  var next=k.sesiList.length+1;
+  document.getElementById('mSSub').textContent='Sesi baharu untuk kelas '+k.nama+'.';
+  document.getElementById('mSLabel').value='Sesi '+next;
+  document.getElementById('modalS').classList.add('on');
+  setTimeout(function(){document.getElementById('mSLabel').focus(); document.getElementById('mSLabel').select()},100);
+}
+function closeS(){document.getElementById('modalS').classList.remove('on')}
+function createS(){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===pendKId}); if(!k)return;
+  var lbl=document.getElementById('mSLabel').value.trim()||('Sesi '+(k.sesiList.length+1));
+  var sesi={id:'s'+Date.now(),label:lbl,ts:Date.now(),responses:{},done:false};
+  k.sesiList.push(sesi); setKD(kd); closeS();
+  // Start single-kelas scan
+  imbasMerge=false;
+  scanKIds=[k.id];
+  scanSIds={}; scanSIds[k.id]=sesi.id;
+  scanAllP=[].concat(k.pelajar);
+  scanIdx=0; scanDone=false;
+  actKId=k.id;
+  gotoV('imbas'); rImbas();
+  toast('"'+lbl+'" dimulakan!');
+}
+function openQRK(kId){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); if(!k)return;
+  var lbl='QR Sesi '+(k.sesiList.length+1);
+  var sesi={id:'s'+Date.now(),label:lbl,ts:Date.now(),responses:{},done:false};
+  k.sesiList.push(sesi); setKD(kd);
+  qrKId=kId; qrSId=sesi.id;
+  gotoV('qr'); rQR();
+}
+
+// ── IMBAS ──
+function rImbas(){
+  var el=document.getElementById('imbasC');
+  el.innerHTML='';
+  var kd=getKD();
+
+  // ── Card wrapper ──
+  var card=document.createElement('div');
+  card.className='card';
+  card.style.cssText='padding:.85rem;margin-bottom:.75rem';
+  el.appendChild(card);
+
+  // ── Mode tabs ──
+  var tabWrap=document.createElement('div');
+  tabWrap.style.cssText='display:flex;gap:0;background:var(--surf2);border-radius:var(--radsm);padding:3px;margin-bottom:.75rem';
+  var tS=document.createElement('div'); tS.className='lap-tab'+(imbasMerge?'':' on'); tS.textContent='📋 Satu Kelas';
+  var tM=document.createElement('div'); tM.className='lap-tab'+(imbasMerge?' on':''); tM.textContent='🔗 Cantuman Kelas';
+  tS.onclick=function(){imbasMerge=false;scanKIds=[];scanSIds={};scanAllP=[];scanIdx=0;scanDone=false;rImbas()};
+  tM.onclick=function(){imbasMerge=true;scanKIds=[];scanSIds={};scanAllP=[];scanIdx=0;scanDone=false;rImbas()};
+  tabWrap.appendChild(tS); tabWrap.appendChild(tM);
+  card.appendChild(tabWrap);
+
+  if(!kd.length){
+    var noK=document.createElement('div');
+    noK.style.cssText='text-align:center;padding:.75rem 0;font-size:13px;color:var(--ink3)';
+    noK.innerHTML='Belum ada kelas. <span style="color:var(--p2);cursor:pointer;font-weight:700" id="goKelas">Tambah kelas →</span>';
+    card.appendChild(noK);
+    document.getElementById('goKelas').onclick=function(){gotoV('kelas')};
+    return;
+  }
+
+  if(imbasMerge){
+    renderMergeMode(card, el, kd);
+  } else {
+    renderSingleMode(card, el, kd);
+  }
+}
+
+// ── SINGLE MODE ──
+function renderSingleMode(card, el, kd){
+  var lbl=document.createElement('span'); lbl.className='slbl'; lbl.textContent='Pilih Kelas';
+  card.appendChild(lbl);
+
+  var pillRow=document.createElement('div');
+  pillRow.style.cssText='display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:'+(scanKIds.length?'.65rem':'0');
+  card.appendChild(pillRow);
+
+  kd.forEach(function(k){
+    var pill=document.createElement('span');
+    pill.className='cmp-pill'+(scanKIds.length&&scanKIds[0]===k.id?' on':'');
+    pill.style.cssText='display:inline-flex;align-items:center;gap:.3rem;cursor:pointer';
+    pill.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+k.warna+';display:inline-block;flex-shrink:0"></span>'+esc(k.nama);
+    pill.addEventListener('click',(function(kid){
+      return function(){
+        // Toggle selection
+        if(scanKIds.length&&scanKIds[0]===kid){
+          // Already selected — deselect
+          scanKIds=[]; scanSIds={}; scanAllP=[]; scanIdx=0; scanDone=false;
+        } else {
+          scanKIds=[kid]; scanSIds={}; scanAllP=[]; scanIdx=0; scanDone=false;
+          var kk=kd.find(function(x){return x.id===kid});
+          if(kk) scanAllP=[].concat(kk.pelajar);
+        }
+        rImbas();
+      };
+    })(k.id));
+    pillRow.appendChild(pill);
+  });
+
+  if(scanKIds.length){
+    var mulaBtn=document.createElement('button');
+    mulaBtn.className='btn btn-p';
+    mulaBtn.style.marginTop='.6rem';
+    mulaBtn.textContent='📡 Mula Imbas Sesi Baharu';
+    mulaBtn.onclick=function(){
+      if(!scanKIds.length)return;
+      var kid=scanKIds[0];
+      var kd2=getKD(); var k=kd2.find(function(x){return x.id===kid}); if(!k)return;
+      var lbl2='Sesi '+(k.sesiList.length+1);
+      var sesi={id:'s'+Date.now(),label:lbl2,ts:Date.now(),responses:{},done:false};
+      k.sesiList.push(sesi); setKD(kd2);
+      scanSIds[kid]=sesi.id; scanAllP=[].concat(k.pelajar); scanIdx=0; scanDone=false;
+      rImbas(); toast('"'+lbl2+'" dimulakan!');
+    };
+    card.appendChild(mulaBtn);
+  }
+
+  // Show scan area
+  if(scanKIds.length && !Object.keys(scanSIds).length){
+    // Kelas selected but no sesi yet — prompt to start
+    return;
+  }
+  if(scanKIds.length && Object.keys(scanSIds).length){
+    if(scanDone){el.appendChild(buildScanDoneEl());return}
+    renderScanArea(el, kd);
+  }
+}
+
+// ── MERGE MODE ──
+function renderMergeMode(card, el, kd){
+  var lbl=document.createElement('span'); lbl.className='slbl'; lbl.textContent='Pilih Kelas untuk Dicantum';
+  card.appendChild(lbl);
+
+  var pillRow=document.createElement('div');
+  pillRow.style.cssText='display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.65rem';
+  card.appendChild(pillRow);
+
+  kd.forEach(function(k){
+    var isSel=scanKIds.includes(k.id);
+    var pill=document.createElement('span');
+    pill.style.cssText='display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .8rem;border-radius:99px;border:1.5px solid '
+      +(isSel?'var(--p)':'var(--bdr)')+';background:'+(isSel?'var(--p)':'var(--surf2)')+';color:'+(isSel?'#fff':'var(--ink3)')
+      +';font-size:11.5px;font-weight:600;cursor:pointer;transition:.13s;user-select:none;-webkit-user-select:none';
+    pill.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+(isSel?'rgba(255,255,255,.7)':k.warna)+';display:inline-block;flex-shrink:0"></span>'+esc(k.nama);
+    pill.addEventListener('click',(function(kid){
+      return function(){
+        if(scanKIds.includes(kid)) scanKIds=scanKIds.filter(function(x){return x!==kid});
+        else scanKIds.push(kid);
+        scanSIds={}; scanAllP=[]; scanIdx=0; scanDone=false;
+        rImbas();
+      };
+    })(k.id));
+    pillRow.appendChild(pill);
+  });
+
+  if(scanKIds.length>=1){
+    var info=document.createElement('div');
+    info.style.cssText='font-size:11.5px;color:var(--ink3);margin-bottom:.6rem';
+    info.textContent=scanKIds.length+' kelas dipilih · '+scanKIds.reduce(function(a,kid){var k=kd.find(function(x){return x.id===kid});return a+(k?k.pelajar.length:0)},0)+' pelajar akan dicantum';
+    card.appendChild(info);
+
+    var mulaBtn=document.createElement('button');
+    mulaBtn.className='btn btn-p full';
+    mulaBtn.textContent='📡 Mula Imbas Cantuman ('+scanKIds.length+' kelas)';
+    mulaBtn.onclick=function(){
+      if(scanKIds.length<1)return;
+      var kd2=getKD();
+      scanSIds={}; scanAllP=[];
+      // Use timestamp offset to ensure unique IDs
+      var baseTs=Date.now();
+      scanKIds.forEach(function(kid,i){
+        var k=kd2.find(function(x){return x.id===kid}); if(!k)return;
+        var lbl2='Cantuman Sesi '+(k.sesiList.length+1);
+        var sesi={id:'s'+(baseTs+i),label:lbl2,ts:baseTs+i,responses:{},done:false};
+        k.sesiList.push(sesi);
+        scanSIds[kid]=sesi.id;
+        scanAllP=scanAllP.concat(k.pelajar);
+      });
+      setKD(kd2); scanIdx=0; scanDone=false;
+      rImbas();
+      toast('Imbasan cantuman '+scanKIds.length+' kelas dimulakan!');
+    };
+    card.appendChild(mulaBtn);
+  } else {
+    var hint=document.createElement('div');
+    hint.style.cssText='font-size:12px;color:var(--ink4);padding:.3rem 0';
+    hint.textContent='Pilih sekurang-kurangnya 1 kelas untuk mula.';
+    card.appendChild(hint);
+  }
+
+  // Show scan if active
+  if(scanKIds.length && Object.keys(scanSIds).length){
+    if(scanDone){el.appendChild(buildScanDoneEl());return}
+    renderScanArea(el, kd);
+  }
+}
+
+// ── SCAN AREA ──
+function renderScanArea(el, kd){
+  var sq=getSQ().filter(function(s){return s.aktif});
+  if(!sq.length){
+    var noSQ=document.createElement('div'); noSQ.className='card';
+    noSQ.style.cssText='text-align:center;padding:1.5rem;font-size:13px;color:var(--ink3)';
+    noSQ.textContent='Tiada soalan aktif. Tetapkan dalam Tetapan.';
+    el.appendChild(noSQ); return;
+  }
+
+  var p=scanAllP[scanIdx];
+  if(!p){return}
+
+  // Find which kelas this student belongs to
+  var pKelas=null;
+  for(var ki=0;ki<scanKIds.length;ki++){
+    var kk=kd.find(function(x){return x.id===scanKIds[ki]});
+    if(kk&&kk.pelajar.includes(p)){pKelas=kk;break}
+  }
+  if(!pKelas){
+    var errEl=document.createElement('div'); errEl.className='card';
+    errEl.style.cssText='text-align:center;padding:1.5rem;font-size:13px;color:var(--ink3)';
+    errEl.textContent='Ralat: pelajar tidak ditemui dalam kelas.';
+    el.appendChild(errEl); return;
+  }
+
+  var sesi=pKelas.sesiList.find(function(s){return s.id===scanSIds[pKelas.id]});
+  if(!sesi){return}
+
+  var soal=sq[0];
+  var ops=soal.useMood!==false?MOODS:(soal.ops||[]).map(function(o,i){return{e:'',l:o,c:MOODS[i%8].c,bg:MOODS[i%8].bg}});
+  var cho=sesi.responses[p]&&sesi.responses[p].jawapan;
+  var pct=Math.round(scanIdx/scanAllP.length*100);
+
+  // Progress
+  var metaDiv=document.createElement('div');
+  metaDiv.className='scan-meta';
+  metaDiv.innerHTML='<span>'+scanKIds.map(function(id){var k=kd.find(function(x){return x.id===id});return k?esc(k.nama):''}).join(' + ')+'</span>'
+    +'<strong>'+(scanIdx+1)+'/'+scanAllP.length+'</strong>';
+  el.appendChild(metaDiv);
+
+  var prog=document.createElement('div'); prog.className='prog-wrap';
+  prog.innerHTML='<div class="prog-fill" style="width:'+pct+'%"></div>';
+  el.appendChild(prog);
+
+  // Student card
+  var sCard=document.createElement('div'); sCard.className='student-card';
+  if(imbasMerge){
+    var kTag=document.createElement('span');
+    kTag.style.cssText='font-size:10px;background:var(--p3);color:var(--p2);border-radius:99px;padding:1px 8px;font-weight:700;margin-bottom:.3rem;display:inline-block';
+    kTag.textContent=pKelas.nama;
+    sCard.appendChild(kTag);
+    sCard.appendChild(document.createElement('br'));
+  }
+  var nmEl=document.createElement('div'); nmEl.className='student-nm'; nmEl.textContent=p;
+  var subEl=document.createElement('div'); subEl.className='student-sub'; subEl.textContent='Pelajar ke-'+(scanIdx+1)+' daripada '+scanAllP.length;
+  sCard.appendChild(nmEl); sCard.appendChild(subEl);
+  el.appendChild(sCard);
+
+  // Question + mood grid
+  var qCard=document.createElement('div'); qCard.className='card';
+  var qDiv=document.createElement('div');
+  qDiv.style.cssText='font-size:14px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.4';
+  qDiv.textContent=soal.teks;
+  qCard.appendChild(qDiv);
+
+  var grid=document.createElement('div'); grid.className='mood-grid';
+  ops.forEach(function(m,i){
+    var btn=document.createElement('div');
+    btn.className='mood-btn'+(cho===m.l?' chosen':'');
+    if(cho===m.l){btn.style.borderColor=m.c; btn.style.background=m.bg}
+    btn.innerHTML='<span class="mood-ic">'+m.e+'</span><span class="mood-nm">'+m.l+'</span>';
+    btn.addEventListener('click',(function(lbl,idx){
+      return function(){pilih(lbl,idx)};
+    })(m.l,i));
+    grid.appendChild(btn);
+  });
+  qCard.appendChild(grid);
+
+  // Nav buttons
+  var navRow=document.createElement('div'); navRow.className='nav-row';
+  var prevBtn=document.createElement('button'); prevBtn.className='nav-b';
+  prevBtn.textContent='← Balik'; if(scanIdx===0) prevBtn.disabled=true;
+  prevBtn.onclick=prevP;
+  var nextBtn=document.createElement('button'); nextBtn.className='nav-b nx';
+  nextBtn.textContent=scanIdx===scanAllP.length-1?'Selesai ✓':'Seterusnya →';
+  if(!cho) nextBtn.disabled=true;
+  nextBtn.onclick=nextP;
+  navRow.appendChild(prevBtn); navRow.appendChild(nextBtn);
+  qCard.appendChild(navRow);
+
+  var skipLnk=document.createElement('span'); skipLnk.className='skip-lnk';
+  skipLnk.textContent='Langkau (tidak hadir)'; skipLnk.onclick=skipP;
+  qCard.appendChild(skipLnk);
+  el.appendChild(qCard);
+}
+
+function buildScanDoneEl(){
+  var totDone=0;
+  var kd=getKD();
+  scanKIds.forEach(function(kid){
+    var k=kd.find(function(x){return x.id===kid}); if(!k)return;
+    var s=k.sesiList.find(function(x){return x.id===scanSIds[kid]});
+    if(s) totDone+=Object.values(s.responses).filter(function(r){return!r.skip}).length;
+  });
+  var wrap=document.createElement('div'); wrap.className='card';
+  wrap.style.cssText='text-align:center;padding:2rem';
+  wrap.innerHTML='<div style="font-size:44px;margin-bottom:.75rem">✅</div>'
+    +'<div style="font-size:19px;font-weight:800;letter-spacing:-.4px;margin-bottom:.35rem">Imbasan Selesai!</div>'
+    +'<div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">'+totDone+' daripada '+scanAllP.length+' pelajar dirakam.</div>';
+  var lapBtn=document.createElement('button'); lapBtn.className='btn btn-g full'; lapBtn.style.marginBottom='.5rem';
+  lapBtn.textContent='📊 Lihat Laporan';
+  lapBtn.onclick=function(){if(scanKIds.length){lapKId=scanKIds[0];lapSId=scanSIds[scanKIds[0]];lapMod='sesi';gotoV('lap')}};
+  var newBtn=document.createElement('button'); newBtn.className='btn btn-p full'; newBtn.style.marginBottom='.5rem';
+  newBtn.textContent='➕ Tambah Sesi Baharu';
+  newBtn.onclick=function(){
+    scanIdx=0; scanDone=false;
+    var kd2=getKD(); var baseTs=Date.now();
+    scanKIds.forEach(function(kid,i){
+      var k=kd2.find(function(x){return x.id===kid}); if(!k)return;
+      var lbl='Sesi '+(k.sesiList.length+1);
+      var sesi={id:'s'+(baseTs+i),label:lbl,ts:baseTs+i,responses:{},done:false};
+      k.sesiList.push(sesi); scanSIds[kid]=sesi.id;
+    });
+    scanAllP=[];
+    scanKIds.forEach(function(kid){var k=kd2.find(function(x){return x.id===kid});if(k)scanAllP=scanAllP.concat(k.pelajar)});
+    setKD(kd2); rImbas();
+  };
+  var kelasBtn=document.createElement('button'); kelasBtn.className='btn btn-o full';
+  kelasBtn.textContent='🏫 Kembali ke Kelas';
+  kelasBtn.onclick=function(){gotoV('kelas')};
+  wrap.appendChild(lapBtn); wrap.appendChild(newBtn); wrap.appendChild(kelasBtn);
+  return wrap;
+}
+
+
+// ── QR ──
+function rQR(){
+  var el=document.getElementById('qrC');
+  if(!qrKId||!qrSId){
+    var kd=getKD();
+    if(!kd.length){
+      el.innerHTML='<div class="card" style="text-align:center;padding:2rem"><div style="font-size:36px;margin-bottom:.75rem">📱</div><div style="font-size:14px;font-weight:700;margin-bottom:.3rem">Tiada kelas</div><div style="font-size:12.5px;color:var(--ink3);margin-bottom:1rem">Daftar kelas dahulu.</div><button class="btn btn-p" id="qrGoKelas">🏫 Urus Kelas</button></div>';
+      document.getElementById('qrGoKelas').onclick=function(){gotoV('kelas')};
+      return;
+    }
+    el.innerHTML='<div class="card"><div class="card-ttl">Pilih kelas untuk jana QR</div><div id="qrKelasL"></div></div>';
+    var ql=document.getElementById('qrKelasL');
+    kd.forEach(function(k){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:.65rem;padding:.65rem .8rem;background:var(--surf2);border-radius:var(--radsm);margin-bottom:.35rem';
+      row.innerHTML='<span style="width:10px;height:10px;border-radius:50%;background:'+k.warna+';flex-shrink:0;display:inline-block"></span>'
+        +'<span style="font-size:13px;font-weight:700;flex:1">'+esc(k.nama)+'</span>'
+        +'<span style="font-size:11px;color:var(--ink4)">'+k.pelajar.length+' pelajar</span>';
+      var janaBtn=document.createElement('button');
+      janaBtn.className='btn btn-p';
+      janaBtn.style.cssText='padding:6px 12px;font-size:12px';
+      janaBtn.textContent='Jana QR →';
+      janaBtn.addEventListener('click',(function(kid){return function(){openQRK(kid)}})(k.id));
+      row.appendChild(janaBtn);
+      ql.appendChild(row);
+    });
+    return;
+  }
+  var kd=getKD(); var k=kd.find(function(x){return x.id===qrKId}); var sesi=k&&k.sesiList.find(function(s){return s.id===qrSId});
+  if(!k||!sesi){qrKId='';qrSId='';rQR();return}
+  var pin=Math.floor(1000+Math.random()*9000).toString();
+  var qId='qr_'+CUR+'_'+Date.now();
+  var sd={id:qId,pin:pin,kelas:k.nama,kelasId:k.id,sesiId:sesi.id,pelajar:k.pelajar,soalan:getSQ().filter(function(s){return s.aktif}),exp:Date.now()+25*60*1000};
+  ls('__activeQR__'+qId,sd);
+  var url=window.location.href.split('?')[0]+'?qr='+qId+'&pin='+pin;
+  el.innerHTML='<div class="card" style="text-align:center;padding:1.35rem">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:.85rem">📱 '+esc(k.nama)+' — '+esc(sesi.label)+'</div>'
+    +'<div class="qr-box"><div id="qrcode"></div></div>'
+    +'<div style="margin-bottom:.3rem;font-size:13px;font-weight:600">PIN: <span style="font-family:\'JetBrains Mono\';font-size:20px;color:var(--p);letter-spacing:.18em;font-weight:700">'+pin+'</span></div>'
+    +'<div style="font-size:12px;color:var(--ink3);margin-bottom:.55rem">Tamat dalam: <span id="qrTmr" style="font-family:\'JetBrains Mono\';font-weight:700;color:var(--r2)">25:00</span></div>'
+    +'<div style="display:inline-flex;align-items:center;gap:.4rem;font-size:12px;color:var(--g);font-weight:600;background:var(--g3);padding:.4rem .85rem;border-radius:99px;margin-bottom:.6rem"><span class="live-dot"></span>Sesi Aktif</div>'
+    +'<div id="qrLv" style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:.85rem">0/'+k.pelajar.length+' respons</div>'
+    +'<div style="background:var(--surf2);border-radius:var(--radsm);padding:.5rem .8rem;font-size:10px;color:var(--ink4);word-break:break-all;margin-bottom:.85rem;font-family:\'JetBrains Mono\'">'+url+'</div>'
+    +'<button class="btn btn-o danger full" id="stopQRBtn">⛔ Tamatkan Sesi QR</button></div>';
+  document.getElementById('stopQRBtn').onclick=function(){stopQR(qId,k.id,sesi.id)};
+  try{new QRCode(document.getElementById('qrcode'),{text:url,width:190,height:190,colorDark:'#1E3A5F',colorLight:'#FFF',correctLevel:QRCode.CorrectLevel.M})}
+  catch(e){document.getElementById('qrcode').innerHTML='<div style="padding:1rem;font-size:11px;color:var(--ink3)">Guna PIN: <b>'+pin+'</b></div>'}
+  var t=25*60; if(qrT)clearInterval(qrT);
+  qrT=setInterval(function(){
+    t--;
+    var te=document.getElementById('qrTmr');if(te)te.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    var lv=lg('__qrResp__'+qId,{});var ce=document.getElementById('qrLv');if(ce)ce.textContent=Object.keys(lv).length+'/'+k.pelajar.length+' respons';
+    if(t<=0){stopQR(qId,k.id,sesi.id);toast('Sesi QR tamat.')}
+  },1000);
+}
+function stopQR(qId,kId,sId){
+  if(qrT){clearInterval(qrT);qrT=null}
+  var lv=lg('__qrResp__'+qId,{});
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); var s=k&&k.sesiList.find(function(x){return x.id===sId});
+  if(s){Object.assign(s.responses,lv);if(Object.keys(s.responses).length>=k.pelajar.length)s.done=true;setKD(kd)}
+  localStorage.removeItem('__activeQR__'+qId); qrKId=''; qrSId='';
+  if(Object.keys(lv).length>0) toast(Object.keys(lv).length+' respons digabungkan!');
+  rQR();
+}
+
+// ── LAPORAN ──
+function openLS(kId,sId){lapKId=kId;lapSId=sId;lapMod='sesi';gotoV('lap')}
+
+function rLap(){
+  var el=document.getElementById('lapC');
+  el.innerHTML='';
+  var kd=getKD();
+
+  // Mode tabs
+  var tabs=document.createElement('div');
+  tabs.className='lap-tabs';
+  tabs.innerHTML='<div class="lap-tab" id="ltS">📋 Sesi</div>'
+    +'<div class="lap-tab" id="ltK">🏫 Kelas</div>'
+    +'<div class="lap-tab" id="ltA">📚 Semua</div>';
+  el.appendChild(tabs);
+  tabs.querySelector('#ltS').classList.toggle('on', lapMod==='sesi');
+  tabs.querySelector('#ltK').classList.toggle('on', lapMod==='kelas');
+  tabs.querySelector('#ltA').classList.toggle('on', lapMod==='semua');
+  tabs.querySelector('#ltS').onclick=function(){lapMod='sesi'; rLap()};
+  tabs.querySelector('#ltK').onclick=function(){lapMod='kelas'; rLap()};
+  tabs.querySelector('#ltA').onclick=function(){lapMod='semua'; rLap()};
+
+  // Body container
+  var body=document.createElement('div');
+  body.id='lapBody';
+  el.appendChild(body);
+
+  if(lapMod==='sesi') lapSesiV(body,kd);
+  else if(lapMod==='kelas') lapKelasV(body,kd);
+  else lapSemuaV(body,kd);
+}
+
+function lapSesiV(body,kd){
+  if(!kd.length){
+    body.innerHTML='<div class="card" style="text-align:center;padding:2rem;font-size:13px;color:var(--ink3)">Belum ada kelas.</div>';
+    return;
+  }
+
+  // ── Kelas picker ──
+  var kpick=document.createElement('div');
+  kpick.className='card'; kpick.style.padding='.85rem';
+  body.appendChild(kpick);
+  renderKPick(kpick, kd);
+
+  // ── Sesi content ──
+  var sesiBody=document.createElement('div');
+  sesiBody.id='lapSesiBody';
+  body.appendChild(sesiBody);
+  renderSesiContent(sesiBody, kd);
+}
+
+function renderKPick(kpick, kd){
+  kpick.innerHTML='';
+  var lbl=document.createElement('span');
+  lbl.className='slbl'; lbl.textContent='Pilih Kelas';
+  kpick.appendChild(lbl);
+
+  var row=document.createElement('div');
+  row.style.cssText='display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:'+(lapKId?'.65rem':'0');
+  kpick.appendChild(row);
+
+  kd.forEach(function(k){
+    var pill=document.createElement('span');
+    pill.className='cmp-pill'+(lapKId===k.id?' on':'');
+    pill.style.cssText='display:inline-flex;align-items:center;gap:.3rem;cursor:pointer';
+    pill.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+k.warna+';display:inline-block;flex-shrink:0"></span>'+esc(k.nama);
+    pill.addEventListener('click', (function(kid){
+      return function(){
+        lapKId=kid; lapSId='';
+        // Re-render both picker and content
+        renderKPick(kpick, kd);
+        var sb=document.getElementById('lapSesiBody');
+        if(sb) renderSesiContent(sb, kd);
+        document.getElementById('lapS').textContent='Pilih sesi';
+      };
+    })(k.id));
+    row.appendChild(pill);
+  });
+
+  // Sesi picker (if kelas selected)
+  if(lapKId){
+    var k=kd.find(function(x){return x.id===lapKId});
+    if(k&&k.sesiList.length){
+      var slbl=document.createElement('span');
+      slbl.className='slbl'; slbl.style.marginTop='.3rem';
+      slbl.textContent='Pilih Sesi';
+      kpick.appendChild(slbl);
+      var srow=document.createElement('div');
+      srow.style.cssText='display:flex;gap:.35rem;flex-wrap:wrap';
+      kpick.appendChild(srow);
+      k.sesiList.forEach(function(s,i){
+        var sp=document.createElement('span');
+        sp.className='cmp-pill'+(lapSId===s.id?' on':'');
+        sp.style.cursor='pointer';
+        sp.textContent='Sesi '+(i+1)+(s.label&&s.label!=='Sesi '+(i+1)?' — '+s.label:'');
+        sp.addEventListener('click', (function(sid){
+          return function(){
+            lapSId=sid;
+            renderKPick(kpick, kd);
+            var sb=document.getElementById('lapSesiBody');
+            if(sb) renderSesiContent(sb, kd);
+          };
+        })(s.id));
+        srow.appendChild(sp);
+      });
+    } else if(k){
+      var noSesi=document.createElement('div');
+      noSesi.style.cssText='font-size:12px;color:var(--ink4);margin-top:.35rem';
+      noSesi.textContent='Tiada sesi untuk kelas ini.';
+      kpick.appendChild(noSesi);
+    }
+  }
+}
+
+function renderSesiContent(container, kd){
+  container.innerHTML='';
+  var k=kd.find(function(x){return x.id===lapKId});
+  var s=k&&k.sesiList.find(function(x){return x.id===lapSId});
+  var lapSEl=document.getElementById('lapS');
+  if(lapSEl) lapSEl.textContent=s?(k.nama+' — '+s.label):(k?k.nama+' — pilih sesi':'Pilih kelas dan sesi');
+
+  if(!k){
+    container.innerHTML='<div class="card" style="text-align:center;padding:1.5rem"><div style="font-size:13px;color:var(--ink3)">Pilih kelas di atas.</div></div>';
+    return;
+  }
+  if(!s){
+    container.innerHTML='<div class="card" style="text-align:center;padding:1.5rem"><div style="font-size:13px;color:var(--ink3)">Pilih sesi di atas.</div></div>';
+    return;
+  }
+  if(!Object.keys(s.responses||{}).length){
+    container.innerHTML='<div class="card" style="text-align:center;padding:1.5rem"><div style="font-size:13px;color:var(--ink3)">Sesi ini belum ada data.</div></div>';
+    return;
+  }
+  container.innerHTML=bldLapH(k,s);
+  var expBtn=container.querySelector('#expCsvBtn');
+  var copBtn=container.querySelector('#copLapBtn');
+  if(expBtn) expBtn.addEventListener('click', (function(kid,sid){return function(){expCSV(kid,sid)}})(k.id,s.id));
+  if(copBtn) copBtn.addEventListener('click', (function(kid,sid){return function(){copyLap(kid,sid)}})(k.id,s.id));
+}
+
+function bldLapH(k,s){
+  var resp=Object.values(s.responses).filter(function(r){return!r.skip});
+  var total=k.pelajar.length;
+  var mc={};MOODS.forEach(function(m){mc[m.l]=0});
+  resp.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+  var tm=MOODS.reduce(function(a,b){return mc[a.l]>=mc[b.l]?a:b});
+  var neg=(mc['Sedih']||0)+(mc['Risau']||0)+(mc['Mengantuk']||0)+(mc['Tertekan']||0);
+  var pos=(mc['Sangat Gembira']||0)+(mc['Baik']||0);
+  var pctR=total?Math.round(resp.length/total*100):0;
+  var aH=neg>=Math.ceil(total*.3)
+    ?'<div class="alert alert-r">⚠️ <strong>'+neg+' pelajar menunjukkan mood negatif.</strong> Pertimbangkan rehat.</div>'
+    :pos>=Math.ceil(total*.6)
+    ?'<div class="alert alert-g">✨ <strong>Mood kelas positif!</strong> '+pos+' pelajar dalam keadaan baik.</div>'
+    :'<div class="alert alert-a">📊 Mood kelas bercampur. Perhatikan pelajar yang perlu sokongan.</div>';
+  var bars=MOODS.map(function(m){
+    var cnt=mc[m.l]||0; if(!cnt)return'';
+    var pct=resp.length?Math.round(cnt/resp.length*100):0;
+    return'<div class="bar-row"><span class="bar-lbl"><span>'+m.e+'</span>'+m.l+'</span>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+m.c+'"></div></div>'
+      +'<span class="bar-cnt">'+cnt+'</span></div>';
+  }).join('');
+  var notes=Object.entries(s.responses).filter(function(e){return e[1].note&&!e[1].skip});
+  var nH=notes.length?'<div class="card"><div class="card-ttl">💬 Nota Pelajar</div>'
+    +notes.map(function(en){var nm=en[0];var r=en[1];var m=MOODS[r.moodIdx]||{e:'?'};
+      return'<div style="padding:.45rem 0;border-bottom:1px solid var(--bdr2)">'
+        +'<div style="font-size:12px;font-weight:700">'+m.e+' '+esc(nm)+'</div>'
+        +'<div style="font-size:12px;color:var(--ink3);font-style:italic;margin-top:.15rem">"'+esc(r.note)+'"</div></div>';
+    }).join('')+'</div>':'';
+  var prows=k.pelajar.map(function(nm){
+    var r=s.responses[nm];
+    if(!r)return'<div class="prow"><div class="prow-av" style="background:#B5B39E">—</div><span class="prow-nm">'+esc(nm)+'</span><span class="prow-status" style="color:var(--ink4)">belum diimbas</span></div>';
+    if(r.skip)return'<div class="prow"><div class="prow-av" style="background:#B5B39E">🚫</div><span class="prow-nm">'+esc(nm)+'</span><span class="prow-status" style="color:var(--ink4)">tidak hadir</span></div>';
+    var m=MOODS[r.moodIdx]||{e:'?',c:'#888'};
+    return'<div class="prow"><div class="prow-av" style="background:'+m.c+'">'+m.e+'</div>'
+      +'<span class="prow-nm">'+esc(nm)+'</span>'
+      +'<span class="prow-status" style="color:'+m.c+'">'+m.l+'</span>'
+      +(r.note?'<span style="font-size:10px;color:var(--a);font-style:italic;cursor:help" title="'+esc(r.note)+'">💬</span>':'')
+      +'</div>';
+  }).join('');
+  return aH
+    +'<div class="stat-grid">'
+    +'<div class="stat-box"><div class="stat-val">'+pctR+'%</div><div class="stat-lbl">Respons ('+resp.length+'/'+total+')</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+tm.e+'</div><div class="stat-lbl">Mood Dominan</div></div>'
+    +'<div class="stat-box"><div class="stat-val" style="color:var(--g2)">'+(resp.length?Math.round(pos/resp.length*100):0)+'%</div><div class="stat-lbl">Positif</div></div>'
+    +'<div class="stat-box"><div class="stat-val" style="color:var(--r2)">'+(resp.length?Math.round(neg/resp.length*100):0)+'%</div><div class="stat-lbl">Negatif</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="card-ttl">📈 Taburan Mood</div>'+bars+'</div>'
+    +nH
+    +'<div class="card"><div class="card-ttl">👥 Senarai Pelajar</div><div class="plist">'+prows+'</div></div>'
+    +'<div class="btn-row" style="margin-bottom:.5rem">'
+    +'<button class="btn btn-o" id="expCsvBtn">📥 Export CSV</button>'
+    +'<button class="btn btn-o" id="copLapBtn">📋 Salin</button>'
+    +'</div>';
+}
+
+function lapKelasV(body,kd){
+  if(!kd.length){
+    body.innerHTML='<div class="card" style="text-align:center;padding:2rem;font-size:13px;color:var(--ink3)">Belum ada kelas.</div>';
+    return;
+  }
+  // Kelas picker
+  var pick=document.createElement('div');
+  pick.className='card'; pick.style.padding='.85rem';
+  body.appendChild(pick);
+
+  var lbl=document.createElement('span');
+  lbl.className='slbl'; lbl.textContent='Pilih Kelas';
+  pick.appendChild(lbl);
+
+  var row=document.createElement('div');
+  row.style.cssText='display:flex;gap:.35rem;flex-wrap:wrap';
+  pick.appendChild(row);
+
+  var lapKBodyEl=document.createElement('div');
+  lapKBodyEl.id='lapKBody';
+  body.appendChild(lapKBodyEl);
+
+  function renderKBody(){
+    lapKBodyEl.innerHTML='';
+    var k=kd.find(function(x){return x.id===lapKId});
+    var lapSEl=document.getElementById('lapS');
+    if(lapSEl) lapSEl.textContent=k?('Semua Sesi — '+k.nama):'Pilih kelas';
+    if(!k){
+      lapKBodyEl.innerHTML='<div class="card" style="text-align:center;padding:1.5rem;font-size:13px;color:var(--ink3)">Pilih kelas di atas.</div>';
+      return;
+    }
+    var allR=k.sesiList.flatMap(function(s){return Object.values(s.responses||{}).filter(function(r){return!r.skip})});
+    if(!allR.length){
+      lapKBodyEl.innerHTML='<div class="card" style="text-align:center;padding:1.5rem;font-size:13px;color:var(--ink3)">Belum ada data untuk kelas ini.</div>';
+      return;
+    }
+    var mc={};MOODS.forEach(function(m){mc[m.l]=0});
+    allR.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+    var tm=MOODS.reduce(function(a,b){return mc[a.l]>=mc[b.l]?a:b});
+    var pos=(mc['Sangat Gembira']||0)+(mc['Baik']||0);
+    var neg=(mc['Sedih']||0)+(mc['Risau']||0)+(mc['Mengantuk']||0)+(mc['Tertekan']||0);
+    var bars=MOODS.map(function(m){
+      var cnt=mc[m.l]||0; if(!cnt)return'';
+      var pct=allR.length?Math.round(cnt/allR.length*100):0;
+      return'<div class="bar-row"><span class="bar-lbl"><span>'+m.e+'</span>'+m.l+'</span>'
+        +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+m.c+'"></div></div>'
+        +'<span class="bar-cnt">'+cnt+'</span></div>';
+    }).join('');
+    lapKBodyEl.innerHTML='<div class="stat-grid">'
+      +'<div class="stat-box"><div class="stat-val">'+k.sesiList.length+'</div><div class="stat-lbl">Jumlah Sesi</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+tm.e+'</div><div class="stat-lbl">Mood Dominan</div></div>'
+      +'<div class="stat-box"><div class="stat-val" style="color:var(--g2)">'+(allR.length?Math.round(pos/allR.length*100):0)+'%</div><div class="stat-lbl">Positif</div></div>'
+      +'<div class="stat-box"><div class="stat-val" style="color:var(--r2)">'+(allR.length?Math.round(neg/allR.length*100):0)+'%</div><div class="stat-lbl">Negatif</div></div>'
+      +'</div>'
+      +'<div class="card"><div class="card-ttl">📈 Taburan Kumulatif — '+esc(k.nama)+'</div>'+bars+'</div>'
+      +'<div class="card"><div class="card-ttl" style="margin-bottom:.5rem">📋 Senarai Sesi <span style="font-size:11px;color:var(--ink4);font-weight:500">(klik untuk lihat detail)</span></div><div class="sesi-list" id="lapKSesiList"></div></div>';
+    var sl=lapKBodyEl.querySelector('#lapKSesiList');
+    k.sesiList.forEach(function(s,i){
+      var r2=Object.values(s.responses||{}).filter(function(x){return!x.skip});
+      var tms=topM(s.responses);
+      var row2=document.createElement('div');
+      row2.className='sesi-row';
+      row2.innerHTML='<span class="sesi-num">Sesi '+(i+1)+'</span>'
+        +'<div style="flex:1;min-width:0"><div class="sesi-nm">'+esc(s.label)+'</div>'
+        +'<div class="sesi-dt">'+fmtDt(s.ts)+'</div></div>'
+        +'<span class="sesi-mood">'+(tms?tms.e:'—')+'</span>'
+        +'<span class="sesi-resp">'+r2.length+'/'+k.pelajar.length+'</span>';
+      row2.addEventListener('click',(function(kid,sid){
+        return function(){lapKId=kid; lapSId=sid; lapMod='sesi'; rLap()};
+      })(k.id,s.id));
+      sl.appendChild(row2);
+    });
+    var expKBtn=document.createElement('button');
+    expKBtn.className='btn btn-o full';
+    expKBtn.textContent='📥 Export Semua CSV';
+    expKBtn.style.marginTop='.3rem';
+    expKBtn.addEventListener('click',(function(kid){return function(){expKelasCSV(kid)}})(k.id));
+    lapKBodyEl.appendChild(expKBtn);
+  }
+
+  kd.forEach(function(k){
+    var pill=document.createElement('span');
+    pill.className='cmp-pill'+(lapKId===k.id?' on':'');
+    pill.style.cssText='display:inline-flex;align-items:center;gap:.3rem;cursor:pointer';
+    pill.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+k.warna+';display:inline-block;flex-shrink:0"></span>'+esc(k.nama);
+    pill.addEventListener('click',(function(kid, p, r2, fn){
+      return function(){
+        lapKId=kid;
+        // Update pill styles
+        r2.querySelectorAll('.cmp-pill').forEach(function(pp){pp.classList.remove('on')});
+        p.classList.add('on');
+        fn();
+      };
+    })(k.id, pill, row, renderKBody));
+    row.appendChild(pill);
+  });
+
+  renderKBody();
+}
+
+function lapSemuaV(body,kd){
+  if(!kd.length){
+    body.innerHTML='<div class="card" style="text-align:center;padding:2rem;font-size:13px;color:var(--ink3)">Belum ada kelas.</div>';
+    return;
+  }
+  var lapSEl=document.getElementById('lapS');
+  if(lapSEl) lapSEl.textContent='Ringkasan semua kelas';
+  var tS=kd.reduce(function(a,k){return a+k.sesiList.length},0);
+  var allR=kd.flatMap(function(k){return k.sesiList.flatMap(function(s){return Object.values(s.responses||{}).filter(function(r){return!r.skip})})});
+  var mc={};MOODS.forEach(function(m){mc[m.l]=0});
+  allR.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+  var tm=allR.length?MOODS.reduce(function(a,b){return mc[a.l]>=mc[b.l]?a:b}):{e:'—'};
+  var pos=(mc['Sangat Gembira']||0)+(mc['Baik']||0);
+  var statsDiv=document.createElement('div');
+  statsDiv.innerHTML='<div class="stat-grid">'
+    +'<div class="stat-box"><div class="stat-val">'+kd.length+'</div><div class="stat-lbl">Kelas</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+tS+'</div><div class="stat-lbl">Jumlah Sesi</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+(allR.length?Math.round(pos/allR.length*100):0)+'%</div><div class="stat-lbl">Purata Positif</div></div>'
+    +'<div class="stat-box"><div class="stat-val" style="font-size:20px">'+tm.e+'</div><div class="stat-lbl">Mood Global</div></div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--ink4);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.55rem">Klik kelas untuk laporan penuh</div>';
+  body.appendChild(statsDiv);
+  kd.forEach(function(k){
+    var ar=k.sesiList.flatMap(function(s){return Object.values(s.responses||{}).filter(function(r){return!r.skip})});
+    var km={};MOODS.forEach(function(m){km[m.l]=0});
+    ar.forEach(function(r){if(km[r.jawapan]!==undefined)km[r.jawapan]++});
+    var kt=ar.length?MOODS.reduce(function(a,b){return km[a.l]>=km[b.l]?a:b}):{e:'—'};
+    var kp=(km['Sangat Gembira']||0)+(km['Baik']||0);
+    var kn=(km['Sedih']||0)+(km['Risau']||0)+(km['Mengantuk']||0)+(km['Tertekan']||0);
+    var card=document.createElement('div');
+    card.className='card';
+    card.style.cssText='padding:.9rem;cursor:pointer;margin-bottom:.75rem';
+    card.innerHTML='<div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem">'
+      +'<span style="width:11px;height:11px;border-radius:50%;background:'+k.warna+';flex-shrink:0;display:inline-block"></span>'
+      +'<span style="font-size:14px;font-weight:800;flex:1">'+esc(k.nama)+'</span>'
+      +'<span style="font-size:10.5px;color:var(--ink4)">'+k.sesiList.length+' sesi · '+ar.length+' respons</span>'
+      +'</div>'
+      +'<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
+      +'<div class="stat-box"><div class="stat-val" style="font-size:20px">'+kt.e+'</div><div class="stat-lbl">Dominan</div></div>'
+      +'<div class="stat-box"><div class="stat-val" style="font-size:18px;color:var(--g2)">'+(ar.length?Math.round(kp/ar.length*100):0)+'%</div><div class="stat-lbl">Positif</div></div>'
+      +'<div class="stat-box"><div class="stat-val" style="font-size:18px;color:var(--r2)">'+(ar.length?Math.round(kn/ar.length*100):0)+'%</div><div class="stat-lbl">Negatif</div></div>'
+      +'</div>';
+    card.addEventListener('click',(function(kid){
+      return function(){lapKId=kid; lapMod='kelas'; rLap()};
+    })(k.id));
+    body.appendChild(card);
+  });
+}
+
+
+// ── BANDING ──
+function rBand(){
+  var el=document.getElementById('bandC'); var kd=getKD();
+  if(kd.length<2){el.innerHTML='<div class="card" style="text-align:center;padding:2rem"><div style="font-size:36px;margin-bottom:.75rem">⚖️</div><div style="font-size:14px;font-weight:700;margin-bottom:.3rem">Perlukan 2 kelas atau lebih</div><div style="font-size:12.5px;color:var(--ink3)">Daftar sekurang-kurangnya 2 kelas.</div></div>';return}
+  if(!cmpSel.length) cmpSel=kd.map(function(k){return k.id});
+  var sel=cmpSel.filter(function(id){return kd.find(function(k){return k.id===id})});
+  var selK=kd.filter(function(k){return sel.includes(k.id)});
+  el.innerHTML='';
+  var picker=document.createElement('div'); picker.className='card'; picker.style.padding='.85rem';
+  picker.innerHTML='<span class="slbl">Pilih Kelas</span><div style="display:flex;gap:.35rem;flex-wrap:wrap" id="bandRow">'
+    +kd.map(function(k){return'<span class="cmp-pill'+(sel.includes(k.id)?' on':'')+'" data-kid="'+k.id+'">'+esc(k.nama)+'</span>'}).join('')+'</div>';
+  el.appendChild(picker);
+  picker.querySelectorAll('.cmp-pill').forEach(function(p){p.onclick=function(){var id=this.dataset.kid;if(cmpSel.includes(id))cmpSel=cmpSel.filter(function(x){return x!==id});else cmpSel.push(id);rBand()}});
+  var rows=selK.map(function(k){
+    var ar=k.sesiList.flatMap(function(s){return Object.values(s.responses||{}).filter(function(r){return!r.skip})});
+    var mc={};MOODS.forEach(function(m){mc[m.l]=0});ar.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+    var tm=ar.length?MOODS.reduce(function(a,b){return mc[a.l]>=mc[b.l]?a:b}):{e:'—',l:'Tiada'};
+    var pos=(mc['Sangat Gembira']||0)+(mc['Baik']||0); var neg=(mc['Sedih']||0)+(mc['Risau']||0)+(mc['Mengantuk']||0)+(mc['Tertekan']||0);
+    return'<tr><td><span style="display:inline-flex;align-items:center;gap:.35rem"><span style="width:8px;height:8px;border-radius:50%;background:'+k.warna+';display:inline-block"></span>'+esc(k.nama)+'</span></td><td>'+k.pelajar.length+'</td><td>'+k.sesiList.length+'</td><td>'+tm.e+' '+tm.l+'</td><td style="color:var(--g2)">'+(ar.length?Math.round(pos/ar.length*100):0)+'%</td><td style="color:var(--r2)">'+(ar.length?Math.round(neg/ar.length*100):0)+'%</td></tr>';
+  }).join('');
+  var tbl=document.createElement('div'); tbl.className='card'; tbl.style.cssText='padding:.85rem;overflow-x:auto';
+  tbl.innerHTML='<span class="slbl">Perbandingan</span><table class="cmp-table"><thead><tr><th>Kelas</th><th>Pelajar</th><th>Sesi</th><th>Mood Dominan</th><th>Positif</th><th>Negatif</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.appendChild(tbl);
+  var trendH=document.createElement('div'); trendH.innerHTML='<span class="slbl" style="margin-top:.3rem">Trend Mood Positif</span>';
+  el.appendChild(trendH);
+  var trendGrid=document.createElement('div'); trendGrid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.6rem';
+  selK.forEach(function(k){
+    var list=k.sesiList.slice(-8);
+    var maxP=1;list.forEach(function(s){var r=Object.values(s.responses||{}).filter(function(x){return!x.skip});maxP=Math.max(maxP,r.filter(function(x){return['Sangat Gembira','Baik'].includes(x.jawapan)}).length)});
+    var card=document.createElement('div'); card.className='card'; card.style.padding='.85rem';
+    var brsHTML=list.map(function(s,i){var r=Object.values(s.responses||{}).filter(function(x){return!x.skip});var p=r.filter(function(x){return['Sangat Gembira','Baik'].includes(x.jawapan)}).length;var h=Math.max(Math.round((p/maxP)*100),3);return'<div style="flex:1;border-radius:3px 3px 0 0;height:'+h+'%;background:'+k.warna+';opacity:.85" title="Sesi '+(i+1)+': '+p+' positif"></div>'}).join('');
+    card.innerHTML='<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.45rem"><span style="width:10px;height:10px;border-radius:50%;background:'+k.warna+';display:inline-block"></span><span style="font-size:12.5px;font-weight:700">'+esc(k.nama)+'</span><span style="font-size:10px;color:var(--ink4);margin-left:auto">'+k.sesiList.length+' sesi</span></div><div style="height:65px;background:var(--surf2);border-radius:var(--radsm);overflow:hidden;padding:.3rem .4rem 0;display:flex;align-items:flex-end;gap:3px">'+brsHTML+'</div><div style="font-size:9.5px;color:var(--ink4);margin-top:.25rem">Trend mood positif</div>';
+    trendGrid.appendChild(card);
+  });
+  el.appendChild(trendGrid);
+}
+
+// ── TETAPAN ──
+function rSet(){
+  var user=getU()[CUR]||{}; var sq=getSQ(); var ret=ug('ret',30);
+  var logo=ug('logo','');
+  var setEl=document.getElementById('setC');
+  setEl.innerHTML='';
+
+  // ── Profile + Logo Card ──
+  var profileCard=document.createElement('div');
+  profileCard.className='card';
+  setEl.appendChild(profileCard);
+
+  var pTitle=document.createElement('div');
+  pTitle.className='card-ttl'; pTitle.textContent='\u{1F464} Maklumat Akaun';
+  profileCard.appendChild(pTitle);
+
+  // Logo row
+  var logoRow=document.createElement('div');
+  logoRow.style.cssText='display:flex;align-items:center;gap:1rem;margin-bottom:.85rem';
+  profileCard.appendChild(logoRow);
+
+  // Logo preview box
+  var logoBox=document.createElement('div');
+  logoBox.style.cssText='width:64px;height:64px;border-radius:var(--radsm);border:2px dashed var(--bdr);background:var(--surf2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer';
+  logoBox.title='Klik untuk tukar logo';
+  if(logo){
+    var prevImg=document.createElement('img');
+    prevImg.src=logo; prevImg.style.cssText='width:100%;height:100%;object-fit:contain';
+    logoBox.appendChild(prevImg);
+  } else {
+    logoBox.innerHTML='<span style="font-size:26px">\u{1F3EB}</span>';
+  }
+  logoRow.appendChild(logoBox);
+
+  // Logo controls
+  var logoCtrl=document.createElement('div');
+  logoCtrl.style.flex='1';
+  logoRow.appendChild(logoCtrl);
+
+  var logoLbl=document.createElement('span');
+  logoLbl.className='slbl'; logoLbl.textContent='Logo Sekolah';
+  logoCtrl.appendChild(logoLbl);
+
+  // Hidden file input
+  var fileInp=document.createElement('input');
+  fileInp.type='file'; fileInp.accept='image/png,image/jpeg,image/jpg,image/gif,image/webp'; fileInp.style.display='none';
+  fileInp.addEventListener('change', function(ev){
+    var file=ev.target.files[0]; if(!file)return;
+    if(file.size>800000){toast('Fail terlalu besar. Sila guna gambar kurang 800KB.');return}
+    var reader=new FileReader();
+    reader.onload=function(e){
+      us('logo',e.target.result);
+      updateLogoHeader();
+      toast('\u2705 Logo berjaya dimuat naik!');
+      rSet(); // re-render to show new logo
+    };
+    reader.readAsDataURL(file);
+    ev.target.value='';
+  });
+  logoCtrl.appendChild(fileInp);
+
+  // Upload button
+  var uploadBtn=document.createElement('button');
+  uploadBtn.className='btn btn-o';
+  uploadBtn.style.cssText='padding:7px 13px;font-size:12px;margin-right:.35rem;margin-bottom:.3rem';
+  uploadBtn.textContent='\u{1F4C2} Muat Naik Logo';
+  uploadBtn.addEventListener('click', function(){fileInp.click()});
+  logoCtrl.appendChild(uploadBtn);
+
+  // Also make logoBox clickable
+  logoBox.addEventListener('click', function(){fileInp.click()});
+
+  // Remove button (if logo exists)
+  if(logo){
+    var rmBtn=document.createElement('button');
+    rmBtn.className='btn btn-o danger';
+    rmBtn.style.cssText='padding:7px 13px;font-size:12px;margin-bottom:.3rem';
+    rmBtn.textContent='\u2715 Buang';
+    rmBtn.addEventListener('click', function(){
+      us('logo',''); updateLogoHeader(); toast('Logo dibuang.'); rSet();
+    });
+    logoCtrl.appendChild(rmBtn);
+  }
+
+  var logoHint=document.createElement('div');
+  logoHint.style.cssText='font-size:10.5px;color:var(--ink4);margin-top:.2rem';
+  logoHint.textContent='PNG atau JPG. Saiz disyorkan 200\xD7200px, max 800KB.';
+  logoCtrl.appendChild(logoHint);
+
+  // Name field
+  var nmDiv=document.createElement('div'); nmDiv.style.marginBottom='.65rem';
+  var nmLbl=document.createElement('span'); nmLbl.className='slbl'; nmLbl.textContent='Nama Penuh';
+  var nmInp=document.createElement('input'); nmInp.className='inp'; nmInp.id='tNm'; nmInp.value=user.nama||'';
+  nmDiv.appendChild(nmLbl); nmDiv.appendChild(nmInp);
+  profileCard.appendChild(nmDiv);
+
+  // School field
+  var skDiv=document.createElement('div'); skDiv.style.marginBottom='.65rem';
+  var skLbl=document.createElement('span'); skLbl.className='slbl'; skLbl.textContent='Sekolah';
+  var skInp=document.createElement('input'); skInp.className='inp'; skInp.id='tSk'; skInp.value=user.sekolah||'';
+  skDiv.appendChild(skLbl); skDiv.appendChild(skInp);
+  profileCard.appendChild(skDiv);
+
+  var savBtn=document.createElement('button');
+  savBtn.className='btn btn-p'; savBtn.style.cssText='width:auto;padding:9px 16px';
+  savBtn.textContent='Simpan';
+  savBtn.addEventListener('click', savePro);
+  profileCard.appendChild(savBtn);
+
+  // ── Password Card ──
+  var passCard=document.createElement('div'); passCard.className='card';
+  passCard.innerHTML='<div class="card-ttl">\u{1F511} Tukar Kata Laluan</div>'
+    +'<div style="display:flex;flex-direction:column;gap:.65rem">'
+    +'<div><span class="slbl">Kata Laluan Lama</span><input class="inp" id="tOP" type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022"></div>'
+    +'<div><span class="slbl">Kata Laluan Baharu</span><input class="inp" id="tNP" type="password" placeholder="Min 6 aksara"></div>'
+    +'<div style="font-size:12px;color:var(--r2);min-height:16px" id="pErr"></div>'
+    +'<button class="btn btn-p" id="chgPassBtn" style="width:auto;padding:9px 16px">Tukar</button></div>';
+  setEl.appendChild(passCard);
+
+  // ── Soalan Card ──
+  var soalCard=document.createElement('div'); soalCard.className='card';
+  soalCard.innerHTML='<div class="card-ttl">\u2753 Soalan Aktif</div>';
+  sq.forEach(function(s,i){
+    var row=document.createElement('div'); row.className='soal-row';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=s.aktif;
+    cb.style.cssText='accent-color:var(--p2);width:14px;height:14px;cursor:pointer;flex-shrink:0';
+    cb.addEventListener('change',(function(idx){return function(){var sq2=getSQ();sq2[idx].aktif=this.checked;us('sq',sq2)}})(i));
+    var txt=document.createElement('span'); txt.style.cssText='font-size:12.5px;flex:1'; txt.textContent=s.teks;
+    row.appendChild(cb); row.appendChild(txt);
+    if(i>=3){
+      var delBtn=document.createElement('button'); delBtn.className='chip-x'; delBtn.textContent='\u2715';
+      delBtn.addEventListener('click',(function(idx){return function(){var sq2=getSQ();sq2.splice(idx,1);us('sq',sq2);rSet()}})(i));
+      row.appendChild(delBtn);
+    }
+    soalCard.appendChild(row);
+  });
+  var sqRow=document.createElement('div'); sqRow.style.cssText='display:flex;gap:.35rem;margin-top:.55rem';
+  var sqInp=document.createElement('input'); sqInp.className='inp'; sqInp.id='sqInp'; sqInp.placeholder='Tambah soalan...'; sqInp.style.flex='1';
+  var sqBtn=document.createElement('button'); sqBtn.className='btn btn-o'; sqBtn.style.padding='9px 13px'; sqBtn.textContent='+';
+  sqBtn.addEventListener('click', addSQ);
+  sqInp.addEventListener('keydown', function(e){if(e.key==='Enter')addSQ()});
+  sqRow.appendChild(sqInp); sqRow.appendChild(sqBtn);
+  soalCard.appendChild(sqRow);
+  setEl.appendChild(soalCard);
+
+  // ── Retention Card ──
+  var retCard=document.createElement('div'); retCard.className='card';
+  retCard.innerHTML='<div class="card-ttl">\u{1F4BE} Penyimpanan</div>'
+    +'<div style="font-size:12.5px;color:var(--ink2);margin-bottom:.6rem">Tempoh data sesi disimpan:</div>';
+  var retRow=document.createElement('div'); retRow.style.cssText='display:flex;gap:.4rem;margin-bottom:.65rem';
+  [30,60,90].forEach(function(d){
+    var pill=document.createElement('span');
+    pill.className='cmp-pill'+(ret===d?' on':''); pill.textContent=d+' Hari';
+    pill.addEventListener('click',(function(days){return function(){us('ret',days);rSet();toast('Data disimpan '+days+' hari.')}})(d));
+    retRow.appendChild(pill);
+  });
+  retCard.appendChild(retRow);
+  var clrBtn=document.createElement('button'); clrBtn.className='btn btn-o danger full'; clrBtn.textContent='\u{1F5D1} Padam Semua Data';
+  clrBtn.addEventListener('click', clrData);
+  retCard.appendChild(clrBtn);
+  setEl.appendChild(retCard);
+
+  // Attach remaining events
+  document.getElementById('chgPassBtn').onclick=chgPass;
+}
+
+// ── TETAPAN HELPERS ──
+function savePro(){
+  var nm=document.getElementById('tNm').value.trim();
+  var sk=document.getElementById('tSk').value.trim();
+  if(!nm||!sk){toast('Sila isi semua ruangan.');return}
+  var u=getU(); u[CUR].nama=nm; u[CUR].sekolah=sk; ls('__users__',u);
+  document.getElementById('sbUn').textContent=nm; document.getElementById('sbSk').textContent=sk;
+  document.getElementById('dUn').textContent=nm; document.getElementById('dSk').textContent=sk;
+  updateLogoHeader(); toast('Profil dikemaskini!');
+}
+function chgPass(){
+  var op=document.getElementById('tOP').value; var np=document.getElementById('tNP').value;
+  var e=document.getElementById('pErr'); var u=getU();
+  if(u[CUR].password!==btoa(op)){e.textContent='Kata laluan lama tidak tepat.';return}
+  if(np.length<6){e.textContent='Min 6 aksara.';return}
+  u[CUR].password=btoa(np); ls('__users__',u);
+  document.getElementById('tOP').value=''; document.getElementById('tNP').value='';
+  e.textContent=''; toast('Kata laluan ditukar!');
+}
+function addSQ(){
+  var inp=document.getElementById('sqInp'); var t=inp.value.trim(); if(!t)return;
+  var sq=getSQ(); sq.push({id:'c'+Date.now(),teks:t,aktif:true,useMood:true});
+  us('sq',sq); inp.value=''; rSet();
+}
+function clrData(){
+  if(!confirm('Padam SEMUA kelas, sesi dan data? Tidak boleh dipulihkan.'))return;
+  setKD([]); actKId=''; scanKIds=[]; scanSIds={}; scanAllP=[]; scanIdx=0; scanDone=false;
+  rSet(); toast('Semua data dipadam.');
+}
+
+// ── EXPORT ──
+function expCSV(kId,sId){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); var s=k&&k.sesiList.find(function(x){return x.id===sId}); if(!k||!s)return;
+  var csv='Nama,Mood,Catatan,Masa\n';
+  k.pelajar.forEach(function(nm){var r=s.responses[nm];if(r&&!r.skip){var m=MOODS[r.moodIdx]||{l:r.jawapan};csv+=nm+','+m.l+','+((r.note||'').replace(/,/g,';'))+','+new Date(r.ts).toLocaleString('ms-MY')+'\n'}});
+  dlCSV(csv,k.nama+'_'+s.label);
+}
+function expKelasCSV(kId){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); if(!k)return;
+  var csv='Sesi,Nama,Mood,Catatan,Masa\n';
+  k.sesiList.forEach(function(s){k.pelajar.forEach(function(nm){var r=s.responses[nm];if(r&&!r.skip){var m=MOODS[r.moodIdx]||{l:r.jawapan};csv+=s.label+','+nm+','+m.l+','+((r.note||'').replace(/,/g,';'))+','+new Date(r.ts).toLocaleString('ms-MY')+'\n'}})});
+  dlCSV(csv,k.nama+'_Semua');
+}
+function dlCSV(csv,nm){
+  var b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='MoodRadar_'+nm+'_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  toast('CSV dieksport!');
+}
+function copyLap(kId,sId){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); var s=k&&k.sesiList.find(function(x){return x.id===sId}); if(!k||!s)return;
+  var resp=Object.values(s.responses).filter(function(r){return!r.skip});
+  var mc={};MOODS.forEach(function(m){mc[m.l]=0});resp.forEach(function(r){if(mc[r.jawapan]!==undefined)mc[r.jawapan]++});
+  var txt='LAPORAN MOOD RADAR PRO\n'+k.nama+' — '+s.label+'\n'+new Date(s.ts).toLocaleString('ms-MY')+'\nRespons: '+resp.length+'/'+k.pelajar.length+'\n\n';
+  MOODS.forEach(function(m){if(mc[m.l]>0)txt+=m.e+' '+m.l+': '+mc[m.l]+'\n'});
+  navigator.clipboard&&navigator.clipboard.writeText(txt).then(function(){toast('Laporan disalin!')}).catch(function(){var w=window.open();w.document.write('<pre>'+txt+'</pre>');w.document.close()});
+}
+
+// ── PELAJAR MODE (QR) ──
+var qrCho=null;
+function rPel(data){
+  var el=document.getElementById('pelS'); el.innerHTML='';
+  var sq=data.soalan&&data.soalan[0]||{teks:'Bagaimana perasaan awak sekarang?',useMood:true};
+  var ops=sq.useMood!==false?MOODS:(sq.ops||[]).map(function(o,i){return{e:'',l:o,c:MOODS[i%8].c,bg:MOODS[i%8].bg}});
+  var done=lg('__qrResp__'+data.id,{});
+  var rem=data.pelajar.filter(function(nm){return!done[nm]});
+  if(!rem.length){
+    el.innerHTML='<div style="text-align:center;padding:3rem 0"><div style="font-size:48px;margin-bottom:.75rem">🎉</div><div style="font-size:18px;font-weight:800;margin-bottom:.4rem">Semua selesai!</div><div style="font-size:13px;color:var(--ink3)">Semua pelajar telah menghantar maklum balas.</div></div>';
+    return;
+  }
+  var cur=rem[0];
+  el.innerHTML='<div style="background:var(--p3);color:var(--p2);border-radius:99px;padding:3px 11px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:.3rem;margin-bottom:.9rem">📡 '+esc(data.kelas)+' · '+Object.keys(done).length+'/'+data.pelajar.length+'</div>'
+    +'<div style="text-align:center;margin-bottom:1.1rem"><div style="font-size:12px;color:var(--ink3);margin-bottom:.2rem">Hai,</div>'
+    +'<div style="font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px;margin-bottom:.35rem">'+esc(cur)+'</div>'
+    +'<div style="font-size:14px;color:var(--ink2);line-height:1.5">'+esc(sq.teks)+'</div></div>'
+    +'<div class="pmode-moods" id="pMoods"></div>'
+    +'<button class="btn btn-p full" disabled id="qCfBtn">Sahkan →</button>';
+  var moodsEl=document.getElementById('pMoods');
+  ops.forEach(function(m,i){
+    var btn=document.createElement('div');
+    btn.className='pmode-mood';
+    btn.innerHTML='<span style="font-size:26px;display:block;margin-bottom:.3rem;line-height:1">'+m.e+'</span>'
+      +'<span style="font-size:9.5px;font-weight:600;color:var(--ink3);display:block;line-height:1.3">'+m.l+'</span>';
+    btn.addEventListener('click',(function(lbl,idx,md,cur2,remain){
+      return function(){
+        qrCho={lbl:lbl,idx:idx,data:md,cur:cur2,rem:remain};
+        document.querySelectorAll('.pmode-mood').forEach(function(b,j){
+          var mb=MOODS[j%8];
+          b.classList.toggle('picked',j===idx);
+          b.style.borderColor=j===idx?mb.c:'var(--bdr)';
+          b.style.background=j===idx?mb.bg:'var(--surf)';
+        });
+        var cfBtn=document.getElementById('qCfBtn');
+        if(cfBtn){cfBtn.disabled=false; cfBtn.onclick=qConf}
+      };
+    })(m.l,i,data,cur,rem));
+    moodsEl.appendChild(btn);
+  });
+}
+function qConf(){
+  if(!qrCho)return;
+  var m=MOODS[qrCho.idx]||{e:'?'};
+  var el=document.getElementById('pelS');
+  el.innerHTML='<div style="text-align:center;padding:.5rem 0">'
+    +'<div style="font-size:52px;margin-bottom:.7rem">'+m.e+'</div>'
+    +'<div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:.2rem">Awak pilih: '+esc(qrCho.lbl)+'</div>'
+    +'<div style="font-size:13px;color:var(--ink3);margin-bottom:1rem">Adakah ini tepat?</div>'
+    +'<div style="background:var(--surf2);border-radius:var(--radsm);padding:.8rem;margin-bottom:.85rem;text-align:left">'
+    +'<span style="font-size:10.5px;color:var(--ink3);display:block;margin-bottom:.35rem">💬 Nota untuk cikgu (pilihan)</span>'
+    +'<textarea id="qNote" style="width:100%;border:1.5px solid var(--bdr);border-radius:var(--radxs);padding:8px 10px;font-size:13px;background:var(--surf);color:var(--ink);outline:none;font-family:inherit;height:58px;resize:none" placeholder="Beritahu cikgu sesuatu..."></textarea>'
+    +'</div>'
+    +'<div style="display:flex;gap:.5rem">'
+    +'<button class="nav-b" id="qBackBtn" style="flex:1">← Tukar</button>'
+    +'<button class="nav-b nx" id="qDoneBtn" style="flex:2">Ya, Sahkan ✓</button>'
+    +'</div></div>';
+  document.getElementById('qBackBtn').onclick=function(){rPel(qrCho.data)};
+  document.getElementById('qDoneBtn').onclick=qDone;
+}
+function qDone(){
+  if(!qrCho)return;
+  var note=document.getElementById('qNote')&&document.getElementById('qNote').value||'';
+  var resp=lg('__qrResp__'+qrCho.data.id,{});
+  resp[qrCho.cur]={jawapan:qrCho.lbl,moodIdx:qrCho.idx,note:note,ts:Date.now()};
+  ls('__qrResp__'+qrCho.data.id,resp);
+  var m=MOODS[qrCho.idx]||{e:'?'};
+  var el=document.getElementById('pelS');
+  el.innerHTML='<div style="text-align:center;padding:2rem 0">'
+    +'<div style="font-size:48px;margin-bottom:.7rem">✅</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:.35rem">Terima kasih, '+esc(qrCho.cur)+'!</div>'
+    +'<div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:1.2rem">Maklum balas anda telah dirakam!</div>'
+    +'<div style="background:var(--surf2);border-radius:var(--radsm);padding:.85rem;margin-bottom:.75rem">'
+    +'<div style="font-size:11px;color:var(--ink3);margin-bottom:.25rem">Awak rasa:</div>'
+    +'<div style="font-size:17px;font-weight:800">'+m.e+' '+esc(qrCho.lbl)+'</div>'
+    +(note?'<div style="font-size:11.5px;color:var(--ink3);font-style:italic;margin-top:.3rem">"'+esc(note)+'"</div>':'')
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--ink4)">Kembalikan peranti kepada cikgu 📱</div></div>';
+  var newRem=qrCho.rem.filter(function(x){return x!==qrCho.cur});
+  if(newRem.length) setTimeout(function(){rPel(qrCho.data)},2100);
+}
+
+// ── QR PARAM CHECK ──
+function chkQRP(){
+  var p=new URLSearchParams(window.location.search);
+  var qId=p.get('qr'); var pin=p.get('pin');
+  if(!qId||!pin)return;
+  var data=lg('__activeQR__'+qId,null);
+  function showMsg(ic,ttl,sub){
+    setTimeout(function(){
+      document.getElementById('splash').classList.add('out');
+      document.getElementById('authScreen').style.display='none';
+      document.getElementById('appScreen').style.display='block';
+      document.querySelector('.sidebar').style.display='none';
+      document.querySelector('.mob-bar').style.display='none';
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
+      document.getElementById('v-pel').classList.add('on');
+      document.getElementById('pelS').innerHTML='<div style="text-align:center;padding:3rem 0">'
+        +'<div style="font-size:48px;margin-bottom:.75rem">'+ic+'</div>'
+        +'<div style="font-size:18px;font-weight:800;margin-bottom:.4rem">'+ttl+'</div>'
+        +'<div style="font-size:13px;color:var(--ink3)">'+sub+'</div></div>';
+    },2100);
+  }
+  if(!data||data.exp<Date.now()){showMsg('⏱','Sesi Telah Tamat','QR ini sudah tidak aktif. Minta cikgu jana QR baharu.');return}
+  if(data.pin!==pin){showMsg('🔒','PIN Tidak Sah','QR code ini tidak sah.');return}
+  setTimeout(function(){
+    document.getElementById('splash').classList.add('out');
+    document.getElementById('authScreen').style.display='none';
+    document.getElementById('appScreen').style.display='block';
+    document.querySelector('.sidebar').style.display='none';
+    document.querySelector('.mob-bar').style.display='none';
+    buildNav();
+    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
+    document.getElementById('v-pel').classList.add('on');
+    rPel(data);
+  },2100);
+}
+
+// ── SCAN DONE BUTTON DELEGATION ──
+document.addEventListener('click',function(e){
+  if(e.target&&e.target.id==='sdLap'){
+    if(scanKIds.length){lapKId=scanKIds[0];lapSId=scanSIds[scanKIds[0]];lapMod='sesi';gotoV('lap')}
+  }
+  if(e.target&&e.target.id==='sdReset'){
+    scanIdx=0; scanDone=false;
+    var kd=getKD();
+    scanKIds.forEach(function(kid){
+      var k=kd.find(function(x){return x.id===kid}); if(!k)return;
+      var lbl='Sesi '+(k.sesiList.length+1);
+      var sesi={id:'s'+Date.now(),label:lbl,ts:Date.now(),responses:{},done:false};
+      k.sesiList.push(sesi); scanSIds[kid]=sesi.id;
+    });
+    setKD(kd); rImbas();
+  }
+});
+
+// ── SCAN NAV ──
+function pilih(lbl,idx){
+  var kd=getKD();
+  var p=scanAllP[scanIdx];
+  var pKelas=null;
+  for(var ki=0;ki<scanKIds.length;ki++){
+    var kk=kd.find(function(x){return x.id===scanKIds[ki]});
+    if(kk&&kk.pelajar.includes(p)){pKelas=kk;break}
+  }
+  if(!pKelas)return;
+  var sesi=pKelas.sesiList.find(function(s){return s.id===scanSIds[pKelas.id]});
+  if(!sesi)return;
+  sesi.responses[p]={jawapan:lbl,moodIdx:idx,ts:Date.now()};
+  setKD(kd); rImbas();
+}
+function nextP(){
+  if(scanIdx<scanAllP.length-1){
+    scanIdx++; rImbas();
+  } else {
+    var kd=getKD();
+    scanKIds.forEach(function(kid){
+      var k=kd.find(function(x){return x.id===kid}); if(!k)return;
+      var s=k.sesiList.find(function(x){return x.id===scanSIds[kid]}); if(s)s.done=true;
+    });
+    setKD(kd); scanDone=true; rImbas();
+  }
+}
+function prevP(){if(scanIdx>0){scanIdx--;rImbas()}}
+function skipP(){
+  var kd=getKD();
+  var p=scanAllP[scanIdx];
+  var pKelas=null;
+  for(var ki=0;ki<scanKIds.length;ki++){
+    var kk=kd.find(function(x){return x.id===scanKIds[ki]});
+    if(kk&&kk.pelajar.includes(p)){pKelas=kk;break}
+  }
+  if(pKelas){
+    var sesi=pKelas.sesiList.find(function(s){return s.id===scanSIds[pKelas.id]});
+    if(sesi)sesi.responses[p]={jawapan:'Tiada',moodIdx:-1,skip:true};
+    setKD(kd);
+  }
+  nextP();
+}
+
+// ── LOGO ──
+function updateLogoHeader(){
+  var logo=ug('logo','');
+  var sbW=document.getElementById('sbLogoWrap');
+  var sbI=document.getElementById('sbLogoImg');
+  if(sbW&&sbI){sbW.style.display=logo?'block':'none';if(logo)sbI.src=logo}
+  var dW=document.getElementById('dLogoWrap');
+  var dI=document.getElementById('dLogoImg');
+  if(dW&&dI){dW.style.display=logo?'block':'none';if(logo)dI.src=logo}
+  var mW=document.getElementById('mobLogoWrap');
+  var mI=document.getElementById('mobLogoImg');
+  if(mW&&mI){mW.style.display=logo?'flex':'none';if(logo)mI.src=logo}
+}
+</script>
+</body>
+</html>
