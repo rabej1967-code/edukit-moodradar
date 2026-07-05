@@ -432,7 +432,7 @@ var CUR='';
 // scanning with their own phone). Everything else stays localStorage.
 // ============================================================
 var SUPA_URL='https://aowzftmdriukxbltjtpm.supabase.co';
-var SUPA_KEY='PASTE_ANON_PUBLIC_KEY_HERE'; // Supabase dashboard > Settings > API > anon public key
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvd3pmdG1kcml1a3hibHRqdHBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzAxOTQsImV4cCI6MjA5NDQ0NjE5NH0.17lKaGC-9jx1cDORx2btwfmzDYon3s3CN2dei2BM-Ac'; // Supabase anon public key
 function supaHeaders(extra){
   var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
   if(extra) for(var k in extra) h[k]=extra[k];
