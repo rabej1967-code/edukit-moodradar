@@ -375,7 +375,7 @@ input,select,textarea,button{font-family:inherit}
           <div id="imbasC"></div>
         </div>
         <div class="view" id="v-qr">
-          <div class="pg-hdr"><div><div class="pg-title">&#128241; Sesi QR</div><div class="pg-sub">Pelajar imbas dengan telefon sendiri</div></div></div>
+          <div class="pg-hdr"><div><div class="pg-title">&#128241; Rekod Mood</div><div class="pg-sub">Manual (peranti guru) atau QR (telefon pelajar)</div></div></div>
           <div id="qrC"></div>
         </div>
         <div class="view" id="v-lap">
@@ -416,7 +416,7 @@ var NAV=[
   {id:'dash',ic:'🏠',lb:'Dashboard'},
   {id:'kelas',ic:'🏫',lb:'Kelas Saya'},
   {id:'imbas',ic:'📡',lb:'Imbas Mood'},
-  {id:'qr',ic:'📱',lb:'Sesi QR'},
+  {id:'qr',ic:'📱',lb:'Rekod Mood'},
   {id:'lap',ic:'📊',lb:'Laporan'},
   {id:'band',ic:'⚖️',lb:'Banding Kelas'},
   {id:'set',ic:'⚙️',lb:'Tetapan'}
@@ -426,6 +426,18 @@ var NAV=[
 function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function lg(k,d){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):d}catch(e){return d}}
 var CUR='';
+
+// ============================================================
+// SUPABASE CONFIG — used only for remote QR check-in (students
+// scanning with their own phone). Everything else stays localStorage.
+// ============================================================
+var SUPA_URL='https://aowzftmdriukxbltjtpm.supabase.co';
+var SUPA_KEY='PASTE_ANON_PUBLIC_KEY_HERE'; // Supabase dashboard > Settings > API > anon public key
+function supaHeaders(extra){
+  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
 function us(k,v){ls('u_'+CUR+'_'+k,v)}
 function ug(k,d){return lg('u_'+CUR+'_'+k,d)}
 function getU(){return lg('__users__',{})}
@@ -1234,6 +1246,15 @@ function buildScanDoneEl(){
 
 
 // ── QR ──
+function startManualK(kId){
+  var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); if(!k)return;
+  imbasMerge=false; scanKIds=[kId]; scanSIds={};
+  var lbl='Sesi '+(k.sesiList.length+1);
+  var sesi={id:'s'+Date.now(),label:lbl,ts:Date.now(),responses:{},done:false};
+  k.sesiList.push(sesi); setKD(kd);
+  scanSIds[kId]=sesi.id; scanAllP=[].concat(k.pelajar); scanIdx=0; scanDone=false;
+  gotoV('imbas'); toast('"'+lbl+'" dimulakan (manual)!');
+}
 function rQR(){
   var el=document.getElementById('qrC');
   if(!qrKId||!qrSId){
@@ -1243,19 +1264,27 @@ function rQR(){
       document.getElementById('qrGoKelas').onclick=function(){gotoV('kelas')};
       return;
     }
-    el.innerHTML='<div class="card"><div class="card-ttl">Pilih kelas untuk jana QR</div><div id="qrKelasL"></div></div>';
+    el.innerHTML='<div class="card"><div class="card-ttl">Pilih kelas &amp; cara rekod mood</div><div id="qrKelasL"></div></div>';
     var ql=document.getElementById('qrKelasL');
     kd.forEach(function(k){
       var row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:.65rem;padding:.65rem .8rem;background:var(--surf2);border-radius:var(--radsm);margin-bottom:.35rem';
+      row.style.cssText='display:flex;align-items:center;gap:.5rem;padding:.65rem .8rem;background:var(--surf2);border-radius:var(--radsm);margin-bottom:.35rem;flex-wrap:wrap';
       row.innerHTML='<span style="width:10px;height:10px;border-radius:50%;background:'+k.warna+';flex-shrink:0;display:inline-block"></span>'
         +'<span style="font-size:13px;font-weight:700;flex:1">'+esc(k.nama)+'</span>'
         +'<span style="font-size:11px;color:var(--ink4)">'+k.pelajar.length+' pelajar</span>';
+      var manualBtn=document.createElement('button');
+      manualBtn.className='btn btn-o';
+      manualBtn.style.cssText='padding:6px 12px;font-size:12px';
+      manualBtn.textContent='✍️ Manual';
+      manualBtn.title='Guru rekod terus guna peranti ini';
+      manualBtn.addEventListener('click',(function(kid){return function(){startManualK(kid)}})(k.id));
       var janaBtn=document.createElement('button');
       janaBtn.className='btn btn-p';
       janaBtn.style.cssText='padding:6px 12px;font-size:12px';
-      janaBtn.textContent='Jana QR →';
+      janaBtn.textContent='📱 Jana QR →';
+      janaBtn.title='Pelajar imbas guna telefon sendiri';
       janaBtn.addEventListener('click',(function(kid){return function(){openQRK(kid)}})(k.id));
+      row.appendChild(manualBtn);
       row.appendChild(janaBtn);
       ql.appendChild(row);
     });
@@ -1267,7 +1296,19 @@ function rQR(){
   var qId='qr_'+CUR+'_'+Date.now();
   var sd={id:qId,pin:pin,kelas:k.nama,kelasId:k.id,sesiId:sesi.id,pelajar:k.pelajar,soalan:getSQ().filter(function(s){return s.aktif}),exp:Date.now()+25*60*1000};
   ls('__activeQR__'+qId,sd);
-  var url=window.location.href.split('?')[0]+'?qr='+qId+'&pin='+pin;
+  if(location.protocol==='file:'){
+    el.innerHTML='<div class="card" style="text-align:center;padding:1.35rem">'
+      +'<div style="font-size:36px;margin-bottom:.6rem">&#9888;&#65039;</div>'
+      +'<div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:.4rem">App Belum Dihoskan Online</div>'
+      +'<div style="font-size:12.5px;color:var(--ink3);line-height:1.6">Fail ini dibuka terus dari peranti (file://). QR jarak jauh tak boleh berfungsi macam ni sebab pelajar perlu buka link web sebenar. Sila upload &amp; buka app ni melalui apps.cikgukita.com dahulu.</div></div>';
+    return;
+  }
+  // Push session config to Supabase so students on their own phones can fetch it
+  fetch(SUPA_URL+'/rest/v1/moodradar_sessions', {
+    method:'POST', headers:supaHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({id:qId,teacher_username:CUR,pin:pin,kelas_id:k.id,kelas_nama:k.nama,sesi_id:sesi.id,pelajar:k.pelajar,soalan:sd.soalan,exp:sd.exp})
+  }).catch(function(){});
+  var url=location.origin+location.pathname+'?qr='+qId+'&pin='+pin;
   el.innerHTML='<div class="card" style="text-align:center;padding:1.35rem">'
     +'<div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:.85rem">📱 '+esc(k.nama)+' — '+esc(sesi.label)+'</div>'
     +'<div class="qr-box"><div id="qrcode"></div></div>'
@@ -1284,18 +1325,37 @@ function rQR(){
   qrT=setInterval(function(){
     t--;
     var te=document.getElementById('qrTmr');if(te)te.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
-    var lv=lg('__qrResp__'+qId,{});var ce=document.getElementById('qrLv');if(ce)ce.textContent=Object.keys(lv).length+'/'+k.pelajar.length+' respons';
+    if(t%3===0){
+      fetch(SUPA_URL+'/rest/v1/moodradar_responses?session_id=eq.'+encodeURIComponent(qId)+'&select=pelajar_nama', {headers:supaHeaders()})
+        .then(function(r){return r.json();})
+        .then(function(rows){ var ce=document.getElementById('qrLv'); if(ce&&Array.isArray(rows)) ce.textContent=rows.length+'/'+k.pelajar.length+' respons'; })
+        .catch(function(){});
+    }
     if(t<=0){stopQR(qId,k.id,sesi.id);toast('Sesi QR tamat.')}
   },1000);
 }
 function stopQR(qId,kId,sId){
   if(qrT){clearInterval(qrT);qrT=null}
-  var lv=lg('__qrResp__'+qId,{});
   var kd=getKD(); var k=kd.find(function(x){return x.id===kId}); var s=k&&k.sesiList.find(function(x){return x.id===sId});
-  if(s){Object.assign(s.responses,lv);if(Object.keys(s.responses).length>=k.pelajar.length)s.done=true;setKD(kd)}
-  localStorage.removeItem('__activeQR__'+qId); qrKId=''; qrSId='';
-  if(Object.keys(lv).length>0) toast(Object.keys(lv).length+' respons digabungkan!');
-  rQR();
+  fetch(SUPA_URL+'/rest/v1/moodradar_responses?session_id=eq.'+encodeURIComponent(qId), {headers:supaHeaders()})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      var lv={};
+      (Array.isArray(rows)?rows:[]).forEach(function(row){
+        lv[row.pelajar_nama]={jawapan:row.jawapan,moodIdx:row.mood_idx,note:row.note||'',ts:row.created_at?new Date(row.created_at).getTime():Date.now()};
+      });
+      if(s){Object.assign(s.responses,lv);if(Object.keys(s.responses).length>=k.pelajar.length)s.done=true;setKD(kd)}
+      localStorage.removeItem('__activeQR__'+qId); qrKId=''; qrSId='';
+      if(Object.keys(lv).length>0) toast(Object.keys(lv).length+' respons digabungkan!');
+      // Clean up remote rows now that they're merged into local records
+      fetch(SUPA_URL+'/rest/v1/moodradar_sessions?id=eq.'+encodeURIComponent(qId), {method:'DELETE',headers:supaHeaders()}).catch(function(){});
+      fetch(SUPA_URL+'/rest/v1/moodradar_responses?session_id=eq.'+encodeURIComponent(qId), {method:'DELETE',headers:supaHeaders()}).catch(function(){});
+      rQR();
+    })
+    .catch(function(){
+      localStorage.removeItem('__activeQR__'+qId); qrKId=''; qrSId='';
+      rQR();
+    });
 }
 
 // ── LAPORAN ──
@@ -1907,10 +1967,19 @@ function copyLap(kId,sId){
 // ── PELAJAR MODE (QR) ──
 var qrCho=null;
 function rPel(data){
+  var el=document.getElementById('pelS'); el.innerHTML='<div style="text-align:center;padding:3rem 0;color:var(--ink4);font-size:13px">Memuatkan...</div>';
+  fetch(SUPA_URL+'/rest/v1/moodradar_responses?session_id=eq.'+encodeURIComponent(data.id)+'&select=pelajar_nama', {headers:supaHeaders()})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      var done={}; (Array.isArray(rows)?rows:[]).forEach(function(row){ done[row.pelajar_nama]=true; });
+      rPelRender(data, done);
+    })
+    .catch(function(){ rPelRender(data, {}); });
+}
+function rPelRender(data, done){
   var el=document.getElementById('pelS'); el.innerHTML='';
   var sq=data.soalan&&data.soalan[0]||{teks:'Bagaimana perasaan awak sekarang?',useMood:true};
   var ops=sq.useMood!==false?MOODS:(sq.ops||[]).map(function(o,i){return{e:'',l:o,c:MOODS[i%8].c,bg:MOODS[i%8].bg}});
-  var done=lg('__qrResp__'+data.id,{});
   var rem=data.pelajar.filter(function(nm){return!done[nm]});
   if(!rem.length){
     el.innerHTML='<div style="text-align:center;padding:3rem 0"><div style="font-size:48px;margin-bottom:.75rem">🎉</div><div style="font-size:18px;font-weight:800;margin-bottom:.4rem">Semua selesai!</div><div style="font-size:13px;color:var(--ink3)">Semua pelajar telah menghantar maklum balas.</div></div>';
@@ -1967,9 +2036,18 @@ function qConf(){
 function qDone(){
   if(!qrCho)return;
   var note=document.getElementById('qNote')&&document.getElementById('qNote').value||'';
-  var resp=lg('__qrResp__'+qrCho.data.id,{});
-  resp[qrCho.cur]={jawapan:qrCho.lbl,moodIdx:qrCho.idx,note:note,ts:Date.now()};
-  ls('__qrResp__'+qrCho.data.id,resp);
+  var btn=document.getElementById('qDoneBtn'); if(btn){btn.disabled=true;btn.textContent='Menghantar...'}
+  fetch(SUPA_URL+'/rest/v1/moodradar_responses', {
+    method:'POST', headers:supaHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({session_id:qrCho.data.id,pelajar_nama:qrCho.cur,jawapan:qrCho.lbl,mood_idx:qrCho.idx,note:note})
+  }).then(function(res){
+    if(!res.ok){ toast('Gagal hantar. Cuba lagi.'); if(btn){btn.disabled=false;btn.textContent='Ya, Sahkan ✓'} return; }
+    finishQDone(note);
+  }).catch(function(){
+    toast('Tiada sambungan internet.'); if(btn){btn.disabled=false;btn.textContent='Ya, Sahkan ✓'}
+  });
+}
+function finishQDone(note){
   var m=MOODS[qrCho.idx]||{e:'?'};
   var el=document.getElementById('pelS');
   el.innerHTML='<div style="text-align:center;padding:2rem 0">'
@@ -1991,7 +2069,6 @@ function chkQRP(){
   var p=new URLSearchParams(window.location.search);
   var qId=p.get('qr'); var pin=p.get('pin');
   if(!qId||!pin)return;
-  var data=lg('__activeQR__'+qId,null);
   function showMsg(ic,ttl,sub){
     setTimeout(function(){
       document.getElementById('splash').classList.add('out');
@@ -2007,19 +2084,27 @@ function chkQRP(){
         +'<div style="font-size:13px;color:var(--ink3)">'+sub+'</div></div>';
     },2100);
   }
-  if(!data||data.exp<Date.now()){showMsg('⏱','Sesi Telah Tamat','QR ini sudah tidak aktif. Minta cikgu jana QR baharu.');return}
-  if(data.pin!==pin){showMsg('🔒','PIN Tidak Sah','QR code ini tidak sah.');return}
-  setTimeout(function(){
-    document.getElementById('splash').classList.add('out');
-    document.getElementById('authScreen').style.display='none';
-    document.getElementById('appScreen').style.display='block';
-    document.querySelector('.sidebar').style.display='none';
-    document.querySelector('.mob-bar').style.display='none';
-    buildNav();
-    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
-    document.getElementById('v-pel').classList.add('on');
-    rPel(data);
-  },2100);
+  fetch(SUPA_URL+'/rest/v1/moodradar_sessions?id=eq.'+encodeURIComponent(qId), {headers:supaHeaders()})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      var row=Array.isArray(rows)&&rows[0];
+      if(!row){showMsg('⏱','Sesi Telah Tamat','QR ini sudah tidak aktif. Minta cikgu jana QR baharu.');return}
+      var data={id:row.id,pin:row.pin,kelas:row.kelas_nama,kelasId:row.kelas_id,sesiId:row.sesi_id,pelajar:row.pelajar,soalan:row.soalan,exp:row.exp};
+      if(!data||data.exp<Date.now()){showMsg('⏱','Sesi Telah Tamat','QR ini sudah tidak aktif. Minta cikgu jana QR baharu.');return}
+      if(data.pin!==pin){showMsg('🔒','PIN Tidak Sah','QR code ini tidak sah.');return}
+      setTimeout(function(){
+        document.getElementById('splash').classList.add('out');
+        document.getElementById('authScreen').style.display='none';
+        document.getElementById('appScreen').style.display='block';
+        document.querySelector('.sidebar').style.display='none';
+        document.querySelector('.mob-bar').style.display='none';
+        buildNav();
+        document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
+        document.getElementById('v-pel').classList.add('on');
+        rPel(data);
+      },2100);
+    })
+    .catch(function(){ showMsg('📶','Tiada Sambungan','Semak sambungan internet dan cuba scan semula.'); });
 }
 
 // ── SCAN DONE BUTTON DELEGATION ──
