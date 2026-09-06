@@ -298,7 +298,7 @@ input,select,textarea,button{font-family:inherit}
     </div>
     <div class="auth-panel">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:1.75rem"><div style="width:36px;height:36px;border-radius:10px;background:var(--p);position:relative;overflow:hidden;flex-shrink:0" class="a-bic"></div><div style="font-size:17px;font-weight:800;color:var(--p)">MoodRadar <span style="font-weight:400;color:var(--ink4);font-size:12px">PRO</span></div></div>
-      <div class="a-tabs"><div class="a-tab on" id="atL" onclick="switchA('login')">Log Masuk</div><div class="a-tab" id="atR" onclick="switchA('reg')">Daftar</div></div>
+      <div class="a-tabs"><div class="a-tab on" id="atL">Log Masuk</div></div>
       <div id="loginForm">
         <div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.25rem">Selamat kembali &#128075;</div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">Log masuk ke akaun Mood Radar anda.</div>
@@ -306,18 +306,9 @@ input,select,textarea,button{font-family:inherit}
         <div class="fld"><label class="fld-lbl">Nama Pengguna</label><input class="fld-inp" id="loginU" placeholder="nama.pengguna" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginP').focus()"></div>
         <div class="fld"><label class="fld-lbl">Kata Laluan</label><input class="fld-inp" id="loginP" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
         <button class="a-btn" onclick="doLogin()">Log Masuk &#8594;</button>
-        <div style="font-size:11.5px;color:var(--ink4);text-align:center;margin-top:.85rem">Demo: <b style="color:var(--ink3)">guru1</b> / <b style="color:var(--ink3)">password1</b></div>
+        <div style="font-size:11px;color:var(--ink4);text-align:center;margin-top:.85rem">Tiada akaun? Hubungi admin sekolah anda untuk didaftarkan.</div>
       </div>
-      <div id="regForm" style="display:none">
-        <div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.25rem">Buat akaun &#127891;</div>
-        <div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">Data anda hanya milik anda sepenuhnya.</div>
-        <div class="a-err" id="regErr"></div>
-        <div class="fld"><label class="fld-lbl">Nama Penuh</label><input class="fld-inp" id="regNm" placeholder="Cikgu Ahmad bin Ali"></div>
-        <div class="fld"><label class="fld-lbl">Nama Pengguna</label><input class="fld-inp" id="regU" placeholder="cikgu.ahmad" autocomplete="username"></div>
-        <div class="fld"><label class="fld-lbl">Kata Laluan</label><input class="fld-inp" id="regP" type="password" placeholder="Min 6 aksara" autocomplete="new-password"></div>
-        <div class="fld"><label class="fld-lbl">Sekolah</label><input class="fld-inp" id="regSk" placeholder="SMK Contoh, Kuala Lumpur"></div>
-        <button class="a-btn" onclick="doReg()">Buat Akaun &#8594;</button>
-      </div>
+      <div id="regForm" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -422,25 +413,69 @@ var NAV=[
   {id:'set',ic:'⚙️',lb:'Tetapan'}
 ];
 
-// ── STORAGE ──
+// ── STORAGE (localStorage kekal untuk cache sementara __activeQR__ sahaja) ──
 function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function lg(k,d){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):d}catch(e){return d}}
 var CUR='';
 
 // ============================================================
-// SUPABASE CONFIG — used only for remote QR check-in (students
-// scanning with their own phone). Everything else stays localStorage.
+// SUPABASE CONFIG + TENANT (SEKOLAH)
 // ============================================================
-var SUPA_URL='https://aowzftmdriukxbltjtpm.supabase.co';
-var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvd3pmdG1kcml1a3hibHRqdHBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzAxOTQsImV4cCI6MjA5NDQ0NjE5NH0.17lKaGC-9jx1cDORx2btwfmzDYon3s3CN2dei2BM-Ac'; // Supabase anon public key
+var SB_URL='https://aowzftmdriukxbltjtpm.supabase.co';
+var SB_ANON_KEY='PASTE_ANON_PUBLIC_KEY_HERE'; // Supabase dashboard > Settings > API > anon public key
+var SUPA_URL=SB_URL; // dikekalkan — dirujuk oleh kod QR sedia ada di bawah
+var SB_FN_ADMIN=SB_URL+'/functions/v1/moodradar-admin';
+var urlParams=new URLSearchParams(window.location.search);
+var KOD_SEKOLAH=(urlParams.get('t')||'').trim().toUpperCase();
+function sbMakeEmail(username,kodSekolah){
+  var u=(username||'').trim().toLowerCase().replace(/[^a-z0-9_.]/g,'');
+  var k=(kodSekolah||'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  return u+'.'+k+'@cikgukita.internal';
+}
+var MR_SESS=null; // {access_token, refresh_token, user_id}
+var MR_SKEY='moodradar_sess_v1_'+(KOD_SEKOLAH||'nokod');
+function loadMRSess(){try{return JSON.parse(localStorage.getItem(MR_SKEY))}catch(e){return null}}
+function saveMRSess(){localStorage.setItem(MR_SKEY,JSON.stringify(MR_SESS))}
+function clearMRSess(){localStorage.removeItem(MR_SKEY)}
+
+async function sbFetch(path,opts){
+  opts=opts||{};
+  var headers=Object.assign({'apikey':SB_ANON_KEY,'Content-Type':'application/json'},opts.headers||{});
+  headers['Authorization']='Bearer '+((MR_SESS&&MR_SESS.access_token)?MR_SESS.access_token:SB_ANON_KEY);
+  return fetch(SB_URL+path,Object.assign({},opts,{headers:headers}));
+}
 function supaHeaders(extra){
-  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  // dikekalkan untuk QR check-in awam (anon key sahaja, bukan token pengguna)
+  var h={'apikey':SB_ANON_KEY,'Authorization':'Bearer '+SB_ANON_KEY,'Content-Type':'application/json'};
   if(extra) for(var k in extra) h[k]=extra[k];
   return h;
 }
-function us(k,v){ls('u_'+CUR+'_'+k,v)}
-function ug(k,d){return lg('u_'+CUR+'_'+k,d)}
-function getU(){return lg('__users__',{})}
+
+// ── DATA CACHE (in-memory, sync ke Supabase, ganti localStorage per-user) ──
+var MR_DATA={}; // cache semua data guru semasa: {kd, sq, ret, logo, ...}
+var _mrSaveTimer=null;
+function us(k,v){ MR_DATA[k]=v; mrScheduleSave(); }
+function ug(k,d){ return (k in MR_DATA) ? MR_DATA[k] : d; }
+function mrScheduleSave(){ clearTimeout(_mrSaveTimer); _mrSaveTimer=setTimeout(mrSaveData,1200); }
+async function mrSaveData(){
+  if(!MR_SESS||!MR_SESS.user_id) return;
+  try{
+    await sbFetch('/rest/v1/moodradar_data?user_id=eq.'+MR_SESS.user_id, {
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({data: MR_DATA})
+    });
+  }catch(e){}
+}
+async function mrLoadData(){
+  try{
+    var res = await sbFetch('/rest/v1/moodradar_data?select=data&user_id=eq.'+MR_SESS.user_id, {method:'GET'});
+    if(!res.ok) return;
+    var rows = await res.json();
+    if(rows.length && rows[0].data) MR_DATA = rows[0].data;
+    else MR_DATA = {};
+  }catch(e){ MR_DATA = {}; }
+}
+
 function getKD(){return ug('kd',[])}
 function setKD(d){us('kd',d)}
 function getSQ(){return ug('sq',[
@@ -461,71 +496,113 @@ var cmpSel=[];
 var lapKId='', lapSId='', lapMod='sesi';
 var imbasMerge=false; // true = cantuman kelas
 
-// ── SEED DEMO ──
-(function(){
-  var u=getU();
-  if(!u.guru1){u.guru1={username:'guru1',password:btoa('password1'),nama:'Cikgu Aminah',sekolah:'SMK Bangsar',color:'#2D5F9E'};ls('__users__',u)}
-  if(!u.guru2){u.guru2={username:'guru2',password:btoa('password2'),nama:'Cikgu Rahman',sekolah:'SMK Petaling',color:'#1A9E6A'};ls('__users__',u)}
-})();
-
 // ── INIT ──
 setTimeout(function(){
   document.getElementById('splash').classList.add('out');
-  var s=lg('__session__',null);
-  if(s&&getU()[s]) loginU(s);
-  else document.getElementById('authScreen').style.display='block';
+  mrBoot();
   chkQRP();
 },2000);
 
 // ── TOAST ──
 function toast(m,d){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},d||2500)}
 
-// ── AUTH ──
-function switchA(tab){
-  document.getElementById('atL').classList.toggle('on',tab==='login');
-  document.getElementById('atR').classList.toggle('on',tab==='reg');
-  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
-  document.getElementById('regForm').style.display=tab==='reg'?'block':'none';
+// ── AUTH (Supabase Auth + RLS) ──
+var MR_CU=null; // {username, role, kod_sekolah, must_change_password}
+
+async function mrFetchProfile(){
+  try{
+    var res = await sbFetch('/rest/v1/moodradar_data?select=username,role,kod_sekolah,must_change_password&user_id=eq.'+MR_SESS.user_id, {method:'GET'});
+    if(!res.ok) return false;
+    var rows = await res.json();
+    if(!rows.length) return false;
+    MR_CU = rows[0];
+    return true;
+  }catch(e){ return false; }
 }
-function doLogin(){
+async function mrRefreshToken(){
+  if(!MR_SESS||!MR_SESS.refresh_token) return false;
+  var res = await sbFetch('/auth/v1/token?grant_type=refresh_token', {method:'POST', body: JSON.stringify({refresh_token:MR_SESS.refresh_token})});
+  if(!res.ok) return false;
+  var d = await res.json();
+  MR_SESS = {access_token:d.access_token, refresh_token:d.refresh_token, user_id:d.user.id};
+  saveMRSess();
+  return true;
+}
+async function mrBoot(){
+  if(!KOD_SEKOLAH){
+    document.getElementById('authScreen').style.display='block';
+    document.getElementById('loginErr').textContent='URL tiada kod sekolah (?t=KODSEKOLAH). Hubungi admin.';
+    document.getElementById('loginErr').classList.add('on');
+    return;
+  }
+  MR_SESS = loadMRSess();
+  if(MR_SESS && MR_SESS.access_token){
+    if(await mrFetchProfile()){ await mrLoadData(); loginU(); return; }
+    if(await mrRefreshToken() && await mrFetchProfile()){ await mrLoadData(); loginU(); return; }
+  }
+  clearMRSess(); MR_SESS=null; MR_CU=null;
+  document.getElementById('authScreen').style.display='block';
+}
+function switchA(tab){ /* self-registration dimatikan; fungsi ini dikekalkan kosong untuk elak ralat */ }
+function mrForcePwScreen(){
+  var panel=document.querySelector('.auth-panel');
+  panel.innerHTML=
+    '<div style="display:flex;align-items:center;gap:9px;margin-bottom:1.75rem"><div style="width:36px;height:36px;border-radius:10px;background:var(--p);position:relative;overflow:hidden;flex-shrink:0" class="a-bic"></div><div style="font-size:17px;font-weight:800;color:var(--p)">MoodRadar <span style="font-weight:400;color:var(--ink4);font-size:12px">PRO</span></div></div>'+
+    '<div style="font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:.25rem">Set Kata Laluan Baru</div>'+
+    '<div style="font-size:13px;color:var(--ink3);margin-bottom:1.4rem">Ini kali pertama anda log masuk. Sila tetapkan kata laluan baru anda sendiri.</div>'+
+    '<div class="a-err" id="fpwErr"></div>'+
+    '<div class="fld"><label class="fld-lbl">Kata Laluan Baru</label><input class="fld-inp" id="fpwNew" type="password" placeholder="min. 6 aksara"></div>'+
+    '<div class="fld"><label class="fld-lbl">Sahkan Kata Laluan</label><input class="fld-inp" id="fpwConf" type="password"></div>'+
+    '<button class="a-btn" onclick="mrForcePwSubmit()">Simpan &amp; Teruskan &#8594;</button>';
+}
+async function mrForcePwSubmit(){
+  var nw=document.getElementById('fpwNew').value;
+  var cf=document.getElementById('fpwConf').value;
+  var err=document.getElementById('fpwErr');
+  if(nw.length<6){err.textContent='Min. 6 aksara.';err.classList.add('on');return}
+  if(nw!==cf){err.textContent='Tidak sepadan.';err.classList.add('on');return}
+  var res = await sbFetch('/auth/v1/user', {method:'PUT', body: JSON.stringify({password:nw})});
+  if(!res.ok){err.textContent='Gagal tukar kata laluan. Cuba lagi.';err.classList.add('on');return}
+  await sbFetch('/rest/v1/moodradar_data?user_id=eq.'+MR_SESS.user_id, {method:'PATCH', headers:{'Prefer':'return=minimal'}, body: JSON.stringify({must_change_password:false})});
+  location.reload();
+}
+async function doLogin(){
   var u=document.getElementById('loginU').value.trim().toLowerCase();
   var p=document.getElementById('loginP').value;
   var e=document.getElementById('loginErr');
+  e.classList.remove('on'); e.textContent='';
+  if(!KOD_SEKOLAH){ e.textContent='URL tiada kod sekolah (?t=KODSEKOLAH).'; e.classList.add('on'); return; }
   if(!u||!p){e.textContent='Sila isi semua ruangan.';e.classList.add('on');return}
-  var users=getU();
-  if(!users[u]||users[u].password!==btoa(p)){e.textContent='Nama pengguna atau kata laluan salah.';e.classList.add('on');return}
-  e.classList.remove('on'); ls('__session__',u); loginU(u);
+  try{
+    var email = sbMakeEmail(u, KOD_SEKOLAH);
+    var res = await sbFetch('/auth/v1/token?grant_type=password', {method:'POST', body: JSON.stringify({email:email,password:p})});
+    if(!res.ok){ e.textContent='Nama pengguna atau kata laluan salah.'; e.classList.add('on'); return; }
+    var d = await res.json();
+    MR_SESS = {access_token:d.access_token, refresh_token:d.refresh_token, user_id:d.user.id};
+    saveMRSess();
+    if(!await mrFetchProfile()){ e.textContent='Akaun wujud tapi profil tidak dijumpai. Hubungi admin.'; e.classList.add('on'); return; }
+    document.getElementById('loginP').value='';
+    if(MR_CU.must_change_password){ mrForcePwScreen(); return; }
+    await mrLoadData();
+    loginU();
+  }catch(err){ e.textContent='Ralat sambungan.'; e.classList.add('on'); }
 }
-function doReg(){
-  var nm=document.getElementById('regNm').value.trim();
-  var u=document.getElementById('regU').value.trim().toLowerCase().replace(/[^a-z0-9._]/g,'');
-  var p=document.getElementById('regP').value;
-  var sk=document.getElementById('regSk').value.trim();
-  var e=document.getElementById('regErr');
-  if(!nm||!u||!p||!sk){e.textContent='Sila isi semua ruangan.';e.classList.add('on');return}
-  if(u.length<3){e.textContent='Nama pengguna terlalu pendek.';e.classList.add('on');return}
-  if(p.length<6){e.textContent='Min 6 aksara.';e.classList.add('on');return}
-  var users=getU();
-  if(users[u]){e.textContent='Nama pengguna sudah digunakan.';e.classList.add('on');return}
-  users[u]={username:u,password:btoa(p),nama:nm,sekolah:sk,color:KC[Object.keys(users).length%KC.length]};
-  ls('__users__',users); ls('__session__',u); e.classList.remove('on');
-  loginU(u); toast('Akaun berjaya dicipta!');
-}
+function doReg(){ /* self-registration dimatikan dalam mod multi-sekolah */ }
 function doLogout(){
   if(!confirm('Log keluar?'))return;
-  ls('__session__',null); CUR='';
+  CUR=''; MR_CU=null; MR_SESS=null; clearMRSess(); MR_DATA={};
   document.getElementById('appScreen').style.display='none';
   document.getElementById('authScreen').style.display='block';
   closeDrawer();
 }
-function loginU(un){
-  CUR=un; var user=getU()[un];
-  var init=user.nama.split(' ').map(function(w){return w[0]}).join('').slice(0,2).toUpperCase();
-  ['sbAv','dAv','mobAv'].forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=init;el.style.background=user.color}});
-  document.getElementById('sbUn').textContent=user.nama;
-  document.getElementById('sbSk').textContent=user.sekolah;
-  document.getElementById('dUn').textContent=user.nama;
-  document.getElementById('dSk').textContent=user.sekolah;
+function loginU(){
+  CUR=MR_CU.username;
+  var initials=CUR.slice(0,2).toUpperCase();
+  ['sbAv','dAv','mobAv'].forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=initials;el.style.background='#2D5F9E'}});
+  document.getElementById('sbUn').textContent=CUR;
+  document.getElementById('sbSk').textContent=KOD_SEKOLAH;
+  document.getElementById('dUn').textContent=CUR;
+  document.getElementById('dSk').textContent=KOD_SEKOLAH;
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   buildNav(); updateLogoHeader(); gotoV('dash');
@@ -581,7 +658,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // ── DASHBOARD ──
 function rDash(){
-  var user=getU()[CUR]||{};
+  var user={nama:ug('displayName',CUR)};
   var hr=new Date().getHours();
   document.getElementById('dGreet').textContent=(hr<12?'Selamat Pagi':hr<17?'Selamat Tengahari':'Selamat Petang')+', '+user.nama+'!';
   var kd=getKD();
@@ -1742,7 +1819,7 @@ function rBand(){
 
 // ── TETAPAN ──
 function rSet(){
-  var user=getU()[CUR]||{}; var sq=getSQ(); var ret=ug('ret',30);
+  var user={nama:ug('displayName',CUR), sekolah:KOD_SEKOLAH}; var sq=getSQ(); var ret=ug('ret',30);
   var logo=ug('logo','');
   var setEl=document.getElementById('setC');
   setEl.innerHTML='';
@@ -1829,17 +1906,17 @@ function rSet(){
   logoHint.textContent='PNG atau JPG. Saiz disyorkan 200\xD7200px, max 800KB.';
   logoCtrl.appendChild(logoHint);
 
-  // Name field
+  // Name field (nama paparan — disimpan dalam data peribadi, bukan nama akaun log masuk)
   var nmDiv=document.createElement('div'); nmDiv.style.marginBottom='.65rem';
-  var nmLbl=document.createElement('span'); nmLbl.className='slbl'; nmLbl.textContent='Nama Penuh';
-  var nmInp=document.createElement('input'); nmInp.className='inp'; nmInp.id='tNm'; nmInp.value=user.nama||'';
+  var nmLbl=document.createElement('span'); nmLbl.className='slbl'; nmLbl.textContent='Nama Penuh (paparan)';
+  var nmInp=document.createElement('input'); nmInp.className='inp'; nmInp.id='tNm'; nmInp.value=ug('displayName',CUR);
   nmDiv.appendChild(nmLbl); nmDiv.appendChild(nmInp);
   profileCard.appendChild(nmDiv);
 
-  // School field
+  // School field (dikunci — ditetapkan oleh kod sekolah dalam URL, bukan boleh ubah sendiri)
   var skDiv=document.createElement('div'); skDiv.style.marginBottom='.65rem';
-  var skLbl=document.createElement('span'); skLbl.className='slbl'; skLbl.textContent='Sekolah';
-  var skInp=document.createElement('input'); skInp.className='inp'; skInp.id='tSk'; skInp.value=user.sekolah||'';
+  var skLbl=document.createElement('span'); skLbl.className='slbl'; skLbl.textContent='Sekolah (kod)';
+  var skInp=document.createElement('input'); skInp.className='inp'; skInp.id='tSk'; skInp.value=user.sekolah||''; skInp.disabled=true; skInp.style.opacity='.6';
   skDiv.appendChild(skLbl); skDiv.appendChild(skInp);
   profileCard.appendChild(skDiv);
 
@@ -1902,26 +1979,89 @@ function rSet(){
   retCard.appendChild(clrBtn);
   setEl.appendChild(retCard);
 
+  // ── Admin: Urus Pengguna (admin sahaja) ──
+  if(MR_CU && MR_CU.role==='admin'){
+    var admCard=document.createElement('div'); admCard.className='card';
+    admCard.innerHTML='<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:.75rem">&#9881; Urus Pengguna (Admin)</div>'+
+      '<div class="fld"><label class="fld-lbl">Nama Pengguna Baru</label><input class="fld-inp" id="mrNuName" placeholder="cth: guru_ali"></div>'+
+      '<div style="font-size:10px;color:var(--ink4);margin:2px 0 8px">Kata laluan akan dijana automatik (random) — anda akan diberi kata laluan itu selepas tambah.</div>'+
+      '<div class="fld"><label class="fld-lbl">Peranan</label><select class="fld-inp" id="mrNuRole"><option value="user">Pengguna</option><option value="admin">Admin</option></select></div>'+
+      '<button class="btn btn-p full" onclick="mrAddUser()">+ Tambah Pengguna</button>'+
+      '<div id="mrAdmMsg" style="font-size:11px;margin-top:.5rem"></div>'+
+      '<div id="mrUserList" style="margin-top:.9rem;display:flex;flex-direction:column;gap:6px"></div>';
+    setEl.appendChild(admCard);
+    mrRenderUserList();
+  }
+
   // Attach remaining events
   document.getElementById('chgPassBtn').onclick=chgPass;
+}
+
+// ── ADMIN: Urus Pengguna (guna Edge Function moodradar-admin) ──
+async function mrAdmFn(action,payload){
+  var res = await fetch(SB_FN_ADMIN, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+MR_SESS.access_token,'apikey':SB_ANON_KEY},
+    body: JSON.stringify(Object.assign({action:action}, payload||{}))
+  });
+  var d = await res.json();
+  if(!res.ok) throw new Error(d.error||'Ralat pelayan');
+  return d;
+}
+async function mrRenderUserList(){
+  var el=document.getElementById('mrUserList'); if(!el) return;
+  el.innerHTML='<div style="font-size:11px;color:var(--ink4)">Memuatkan...</div>';
+  try{
+    var d = await mrAdmFn('list_users');
+    el.innerHTML='';
+    d.users.forEach(function(u){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;font-size:11.5px;padding:6px 8px;background:var(--surf2);border-radius:8px';
+      row.innerHTML='<span style="font-weight:700;flex:1">'+u.username+'</span>'
+        +'<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:'+(u.role==='admin'?'rgba(45,95,158,.15);color:var(--p)':'rgba(100,116,139,.15);color:var(--ink3)')+'">'+(u.role==='admin'?'Admin':'Pengguna')+'</span>'
+        +(u.must_change_password?'<span style="font-size:9px;color:#e08a1e">Belum set pasword</span>':'')
+        +(u.username===MR_CU.username?'<span style="font-size:9px;color:var(--ink4)">Anda</span>'
+          :'<button style="border:1px solid #f3c9c9;background:none;color:#c0392b;border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer" onclick="mrDelUser(\''+u.username+'\')">Buang</button>');
+      el.appendChild(row);
+    });
+  }catch(e){ el.innerHTML='<div style="font-size:11px;color:#c0392b">Ralat: '+e.message+'</div>'; }
+}
+async function mrAddUser(){
+  var n=document.getElementById('mrNuName').value.trim();
+  var r=document.getElementById('mrNuRole').value;
+  var m=document.getElementById('mrAdmMsg');
+  if(!n){ m.innerHTML='<span style="color:#c0392b">Nama diperlukan.</span>'; return; }
+  m.textContent='Mencipta akaun...';
+  try{
+    var d = await mrAdmFn('create_user',{username:n,role:r});
+    document.getElementById('mrNuName').value='';
+    m.innerHTML='<span style="color:#1a9e6a">&#10003; Akaun "'+d.username+'" dicipta.<br>Kata laluan sementara: <b style="user-select:all">'+d.password+'</b><br>(Beri kepada pengguna — wajib tukar pasword kali pertama log masuk)</span>';
+    mrRenderUserList();
+  }catch(e){ m.innerHTML='<span style="color:#c0392b">'+e.message+'</span>'; }
+}
+async function mrDelUser(username){
+  if(!confirm('Padam pengguna "'+username+'"?')) return;
+  try{ await mrAdmFn('delete_user',{username:username}); mrRenderUserList(); }
+  catch(e){ toast('Gagal padam: '+e.message); }
 }
 
 // ── TETAPAN HELPERS ──
 function savePro(){
   var nm=document.getElementById('tNm').value.trim();
-  var sk=document.getElementById('tSk').value.trim();
-  if(!nm||!sk){toast('Sila isi semua ruangan.');return}
-  var u=getU(); u[CUR].nama=nm; u[CUR].sekolah=sk; ls('__users__',u);
-  document.getElementById('sbUn').textContent=nm; document.getElementById('sbSk').textContent=sk;
-  document.getElementById('dUn').textContent=nm; document.getElementById('dSk').textContent=sk;
+  if(!nm){toast('Sila isi nama.');return}
+  us('displayName',nm);
+  document.getElementById('sbUn').textContent=nm; document.getElementById('dUn').textContent=nm;
   updateLogoHeader(); toast('Profil dikemaskini!');
 }
-function chgPass(){
+async function chgPass(){
   var op=document.getElementById('tOP').value; var np=document.getElementById('tNP').value;
-  var e=document.getElementById('pErr'); var u=getU();
-  if(u[CUR].password!==btoa(op)){e.textContent='Kata laluan lama tidak tepat.';return}
+  var e=document.getElementById('pErr');
   if(np.length<6){e.textContent='Min 6 aksara.';return}
-  u[CUR].password=btoa(np); ls('__users__',u);
+  var email = sbMakeEmail(CUR, KOD_SEKOLAH);
+  var verify = await sbFetch('/auth/v1/token?grant_type=password', {method:'POST', body: JSON.stringify({email:email,password:op})});
+  if(!verify.ok){e.textContent='Kata laluan lama tidak tepat.';return}
+  var res = await sbFetch('/auth/v1/user', {method:'PUT', body: JSON.stringify({password:np})});
+  if(!res.ok){e.textContent='Gagal tukar. Cuba lagi.';return}
   document.getElementById('tOP').value=''; document.getElementById('tNP').value='';
   e.textContent=''; toast('Kata laluan ditukar!');
 }
@@ -2182,6 +2322,19 @@ function updateLogoHeader(){
   var mI=document.getElementById('mobLogoImg');
   if(mW&&mI){mW.style.display=logo?'flex':'none';if(logo)mI.src=logo}
 }
+</script>
+<script>
+// ── KEEP-ALIVE — pastikan Supabase tidak tidur ──────────────
+(function(){
+  var _kaUrl = typeof SUPA_URL !== 'undefined' ? SUPA_URL : (typeof SB_URL !== 'undefined' ? SB_URL : '');
+  var _kaKey = typeof SUPA_KEY !== 'undefined' ? SUPA_KEY : (typeof SB_KEY !== 'undefined' ? SB_KEY : '');
+  if (!_kaUrl || !_kaKey) return;
+  if (window._ekKaTimer) clearInterval(window._ekKaTimer);
+  window._ekKaTimer = setInterval(function(){
+    fetch(_kaUrl+'/rest/v1/', {headers:{'apikey':_kaKey,'Authorization':'Bearer '+_kaKey}}).catch(function(){});
+  }, 4*60*1000);
+  console.log('EduKit keep-alive started');
+})();
 </script>
 </body>
 </html>
